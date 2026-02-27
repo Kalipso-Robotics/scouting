@@ -477,10 +477,12 @@ function updateAlliancePicks(){
     h+='<span class="rec-rank">'+(i+1)+'</span>';
     h+='<span class="rec-name">'+pk.team+badge+'</span>';
     h+='<span class="rec-detail">Max:'+Math.round(pk.totalMax)+' Avg:'+Math.round(pk.totalAvg)+'</span>';
+    var youMax=pk.meAutoMax+pk.meTelMax;
+    var pMax=pk.pAutoMax+pk.pTelMax;
     h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
-    h+='You: <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
+    h+='You('+youMax+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
     h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+pk.meTelMax+')</span> ';
-    h+='P: <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+pk.pAutoMax+')</span> ';
+    h+='P('+pMax+'): <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+pk.pAutoMax+')</span> ';
     h+='<span class="alliance-pick-pos pos-'+(pk.pTel==='Near'?'near':'far')+'">T:'+pk.pTel+'('+pk.pTelMax+')</span>';
     h+='</div></li>';
   }
