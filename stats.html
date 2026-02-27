@@ -228,6 +228,10 @@ function renderTable(stats){
   var cols=[
     {k:'rank',l:'#',fmt:'int',g:''},
     {k:'team',l:'Team',fmt:'str',g:''},
+    {k:'maxScoreNear',l:'MAX',fmt:'int',g:'Total Near'},
+    {k:'avgScoreNear',l:'AVG',fmt:'f0',g:'Total Near'},
+    {k:'maxScoreFar',l:'MAX',fmt:'int',g:'Total Far'},
+    {k:'avgScoreFar',l:'AVG',fmt:'f0',g:'Total Far'},
     {k:'autoMaxNear',l:'MAX',fmt:'int',g:'Auto Near'},
     {k:'autoAvgNear',l:'AVG',fmt:'f0',g:'Auto Near'},
     {k:'autoMaxFar',l:'MAX',fmt:'int',g:'Auto Far'},
@@ -236,10 +240,6 @@ function renderTable(stats){
     {k:'telAvgNear',l:'AVG',fmt:'f0',g:'Tel Near'},
     {k:'telMaxFar',l:'MAX',fmt:'int',g:'Tel Far'},
     {k:'telAvgFar',l:'AVG',fmt:'f0',g:'Tel Far'},
-    {k:'maxScoreNear',l:'MAX',fmt:'int',g:'Total Near'},
-    {k:'avgScoreNear',l:'AVG',fmt:'f0',g:'Total Near'},
-    {k:'maxScoreFar',l:'MAX',fmt:'int',g:'Total Far'},
-    {k:'avgScoreFar',l:'AVG',fmt:'f0',g:'Total Far'},
     {k:'leverRate',l:'Lever',fmt:'pct2',g:''}
   ];
 
