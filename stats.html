@@ -137,6 +137,7 @@ function onData(json){
     stats.push(s);
   }
 
+  stats.sort(function(a,b){return b.maxScore-a.maxScore});
   renderTable(stats);
   renderRecommendations(stats);
   renderAllianceSelection(stats);
