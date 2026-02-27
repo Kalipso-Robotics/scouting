@@ -164,7 +164,9 @@
 </head>
 <body>
 
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.1</div>
 <h1>KALIPSO DECODE SCOUTING</h1>
+<iframe id="submit-frame" name="submit-frame" style="display:none"></iframe>
 
 <div class="match-row">
   <input type="text" class="match-input" id="matchNumber" placeholder="Match #">
@@ -439,12 +441,19 @@ function submitData(){
   for(var i=0;i<rows.length;i++) rows[i].alliance_score=allianceScores[rows[i].alliance];
   var btn=document.querySelector('.sub-btn');
   btn.disabled=true;btn.textContent='SENDING...';
-  var url='https://script.google.com/macros/s/AKfycbwDhVmXeI1Ic95zEL7I7Dggic8Bg5bS6bV8UQpcgFxzKzF2lc4V8gr_8hwVeTLPS-2x/exec'
-    +'?action=submit&data='+encodeURIComponent(JSON.stringify(rows));
-  fetch(url)
-  .then(function(res){return res.text()})
-  .then(function(r){showToast('Submitted! '+r);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
-  .catch(function(e){showToast('Error: '+e.message,true);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'});
+  var frame=document.getElementById('submit-frame');
+  frame.onload=function(){
+    showToast('Submitted!');btn.disabled=false;btn.textContent='SUBMIT TO SHEET';
+    frame.onload=null;
+  };
+  var form=document.createElement('form');
+  form.method='POST';
+  form.action='https://script.google.com/macros/s/AKfycbwDhVmXeI1Ic95zEL7I7Dggic8Bg5bS6bV8UQpcgFxzKzF2lc4V8gr_8hwVeTLPS-2x/exec';
+  form.target='submit-frame';
+  var inp=document.createElement('input');
+  inp.type='hidden';inp.name='data';inp.value=JSON.stringify(rows);
+  form.appendChild(inp);document.body.appendChild(form);
+  form.submit();form.remove();
 }
 
 function resetAll(){
