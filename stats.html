@@ -87,9 +87,12 @@
 <script>
 function loadData(){
   document.getElementById('content').innerHTML='<div class="loading">Loading...</div>';
-  google.script.run.withSuccessHandler(onData).withFailureHandler(onErr).getData();
+  fetch('https://script.google.com/macros/s/AKfycbwDhVmXeI1Ic95zEL7I7Dggic8Bg5bS6bV8UQpcgFxzKzF2lc4V8gr_8hwVeTLPS-2x/exec')
+    .then(function(res){return res.text()})
+    .then(function(json){onData(json)})
+    .catch(function(e){onErr(e)});
 }
-function onErr(e){document.getElementById('content').innerHTML='<div class="loading">Error: '+e.message+'</div>';}
+function onErr(e){document.getElementById('content').innerHTML='<div class="loading">Error: '+(e.message||e)+'</div>';}
 
 function onData(json){
   var raw=JSON.parse(json);
