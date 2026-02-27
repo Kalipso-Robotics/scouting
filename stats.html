@@ -77,7 +77,7 @@
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.1</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.2</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
 <div class="nav"><a href="?page=index">← Back to Scouting</a></div>
 
@@ -170,14 +170,8 @@ function computeStats(name,ms){
     telAccFar:acc(telFarBallsTotal,telFarShoots),
     avgScoreNear:avg(nearScores),
     avgScoreFar:avg(farScores),
+    avgScore:avg(allScores),
     maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
-    // For ranking
-    nearScores:nearScores,
-    farScores:farScores,
-    nearTotalShoots:autoNearShoots+telNearShoots,
-    farTotalShoots:autoFarShoots+telFarShoots,
-    nearAccOverall:acc(autoNearBallsTotal+telNearBallsTotal,autoNearShoots+telNearShoots),
-    farAccOverall:acc(autoFarBallsTotal+telFarBallsTotal,autoFarShoots+telFarShoots),
     leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
   };
 }
@@ -190,17 +184,6 @@ function avg(arr){
 function acc(balls,shoots){
   if(!shoots)return 0;
   return Math.min(balls/(shoots*3),1);
-}
-function stdev(arr){
-  if(arr.length<2)return 0;
-  var m=avg(arr),s=0;
-  for(var i=0;i<arr.length;i++)s+=(arr[i]-m)*(arr[i]-m);
-  return Math.sqrt(s/arr.length);
-}
-function cv(arr){
-  var a=avg(arr);
-  if(!a)return 999;
-  return stdev(arr)/a;
 }
 
 // Render table
@@ -297,32 +280,40 @@ function sortTable(col){
 
 // Recommendation engine
 function renderRecommendations(stats){
-  // Filter teams with enough data
+  // Best Near: sorted by lever rate desc, then avg near auto desc, then avg near teleop desc
   var nearCandidates=[];
-  var farCandidates=[];
-
   for(var i=0;i<stats.length;i++){
     var s=stats[i];
-    // Need at least 1 match with near data
-    if(s.nearScores.length>=1 && s.nearTotalShoots>=1){
-      nearCandidates.push(computeRank(s,'near'));
-    }
-    if(s.farScores.length>=1 && s.farTotalShoots>=1){
-      farCandidates.push(computeRank(s,'far'));
+    if(s.autoAvgNear>0||s.telAvgNear>0){
+      nearCandidates.push(s);
     }
   }
+  nearCandidates.sort(function(a,b){
+    if(b.leverRate!==a.leverRate)return b.leverRate-a.leverRate;
+    if(b.autoAvgNear!==a.autoAvgNear)return b.autoAvgNear-a.autoAvgNear;
+    return b.telAvgNear-a.telAvgNear;
+  });
 
-  nearCandidates.sort(function(a,b){return b.composite-a.composite});
-  farCandidates.sort(function(a,b){return b.composite-a.composite});
+  // Best Far: sorted by avg far auto desc, then avg far teleop desc
+  var farCandidates=[];
+  for(var i=0;i<stats.length;i++){
+    var s=stats[i];
+    if(s.autoAvgFar>0||s.telAvgFar>0){
+      farCandidates.push(s);
+    }
+  }
+  farCandidates.sort(function(a,b){
+    if(b.autoAvgFar!==a.autoAvgFar)return b.autoAvgFar-a.autoAvgFar;
+    return b.telAvgFar-a.telAvgFar;
+  });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Composite ranking: 30% accuracy + 25% avg score + 25% consistency + 20% volume. Consistency = low variation across matches.</div>';
+  h+='<div class="note">Best Near: lever rate, then avg near auto, then avg near teleop. Best Far: avg far auto, then avg far teleop.</div>';
   h+='<div class="rec-grid">';
-  h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near');
-  h+=renderRecCard(farCandidates,'Best Far Teams','rec-far');
+  h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
+  h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
   h+='</div></div>';
 
-  // Append after table
   var existing=document.getElementById('rec-container');
   if(existing)existing.remove();
   var div=document.createElement('div');
@@ -331,37 +322,7 @@ function renderRecommendations(stats){
   document.getElementById('content').appendChild(div);
 }
 
-function computeRank(s,type){
-  var scores=type==='near'?s.nearScores:s.farScores;
-  var totalShoots=type==='near'?s.nearTotalShoots:s.farTotalShoots;
-  var accOverall=type==='near'?s.nearAccOverall:s.farAccOverall;
-  var avgScore=type==='near'?s.avgScoreNear:s.avgScoreFar;
-
-  // Consistency: 1 - coefficient of variation (capped 0-1)
-  var consistency=Math.max(0,1-cv(scores));
-
-  // Normalize values for composite
-  // Accuracy: already 0-1
-  var accNorm=accOverall;
-  // Avg score: normalize to 0-1 (assume max reasonable ~90)
-  var scoreNorm=Math.min(avgScore/90,1);
-  // Volume: normalize shoots (assume max ~30 per team across matches)
-  var volNorm=Math.min(totalShoots/30,1);
-
-  var composite=accNorm*0.30+scoreNorm*0.25+consistency*0.25+volNorm*0.20;
-
-  return {
-    team:s.team,
-    composite:composite,
-    avgScore:Math.round(avgScore),
-    accuracy:Math.round(accOverall*100),
-    consistency:Math.round(consistency*100),
-    totalShoots:totalShoots,
-    matchCount:scores.length
-  };
-}
-
-function renderRecCard(candidates,title,cls){
+function renderRecCard(candidates,title,cls,type){
   var h='<div class="rec-card '+cls+'"><h3>'+title+'</h3><ol class="rec-list">';
   var max=Math.min(candidates.length,10);
   for(var i=0;i<max;i++){
@@ -370,10 +331,17 @@ function renderRecCard(candidates,title,cls){
     if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
     else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
+    var detail='';
+    if(type==='near'){
+      detail='Lever:'+c.leverRate+'% AutoN:'+c.autoAvgNear.toFixed(1)+' TelN:'+c.telAvgNear.toFixed(1);
+    } else {
+      detail='AutoF:'+c.autoAvgFar.toFixed(1)+' TelF:'+c.telAvgFar.toFixed(1);
+    }
+    detail+=' | Avg:'+Math.round(c.avgScore)+' Max:'+c.maxScore;
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
     h+='<span class="rec-name">'+c.team+badge+'</span>';
-    h+='<span class="rec-detail">'+c.avgScore+'pts '+c.accuracy+'%acc '+c.consistency+'%con '+c.totalShoots+'sh / '+c.matchCount+'m</span>';
+    h+='<span class="rec-detail">'+detail+'</span>';
     h+='</li>';
   }
   if(!max)h+='<li style="opacity:0.4">No data yet</li>';
