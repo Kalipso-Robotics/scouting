@@ -194,6 +194,7 @@ function computeStats(name,ms){
     avgScoreNear:avg(nearScores),
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
     avgScoreFar:avg(farScores),
+    maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
     leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
   };
 }
@@ -214,9 +215,12 @@ var currentStats=[];
 
 function renderTable(stats){
   currentStats=stats;
+  // Assign rank by maxScore descending
+  var ranked=stats.slice().sort(function(a,b){return b.maxScore-a.maxScore});
+  for(var i=0;i<ranked.length;i++)ranked[i].rank=i+1;
   var cols=[
+    {k:'rank',l:'#',fmt:'int',g:''},
     {k:'team',l:'Team',fmt:'str',g:''},
-    {k:'matchCount',l:'#',fmt:'int',g:''},
     {k:'autoMaxNear',l:'Mx',fmt:'int',g:'A-N'},
     {k:'autoAvgNear',l:'Av',fmt:'f1',g:'A-N'},
     {k:'autoMaxFar',l:'Mx',fmt:'int',g:'A-F'},
