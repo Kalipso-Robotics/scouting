@@ -3,27 +3,25 @@
 // ============================================
 // 1. Open Google Sheet > Extensions > Apps Script
 // 2. Replace Code.gs with this file
-// 3. Add HTML files: "Index" (scouting) and "Stats" (analytics)
-// 4. Deploy > New deployment > Web app
+// 3. Deploy > Manage deployments > Edit > New version
 //    Execute as: Me, Who has access: Anyone
-// 5. Scouting: deployed URL
-//    Stats:    deployed URL?page=stats
 // ============================================
 
-// Route pages
+// Called by stats.html via fetch GET to retrieve all scouting data
 function doGet(e) {
-  var page = (e && e.parameter && e.parameter.page) || 'index';
-  if (page === 'stats') {
-    return HtmlService.createHtmlOutputFromFile('Stats')
-      .setTitle('Kalipso Stats Dashboard')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-  }
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Kalipso Decode Scouting')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, user-scalable=no');
+  var json = getData();
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Called from Stats page to get all scouting data
+// Called by index.html via hidden iframe form POST to submit data
+function doPost(e) {
+  var rowsJson = e.parameter.data;
+  var result = submitRows(rowsJson);
+  return ContentService.createTextOutput(result);
+}
+
+// Get all scouting data from the sheet
 function getData() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var lastRow = sheet.getLastRow();
@@ -62,7 +60,7 @@ function getData() {
   return JSON.stringify(rows);
 }
 
-// Called from scouting page to submit data
+// Write rows to the sheet
 function submitRows(rowsJson) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var rows = JSON.parse(rowsJson);
