@@ -176,8 +176,10 @@ function computeStats(name,ms){
     if(farS>0)farScores.push(farS);
 
     allScores.push(m.team_score);
-    if(m.auto_lever==='Yes')leverHits++;
-    leverMatches++;
+    if(m.auto_near_shoots>0||m.auto_near_balls>0||m.auto_lever==='Yes'){
+      leverMatches++;
+      if(m.auto_lever==='Yes')leverHits++;
+    }
   }
 
   // Convert balls to scores (*3)
@@ -228,19 +230,20 @@ function renderTable(stats){
   var cols=[
     {k:'rank',l:'#',fmt:'int',g:''},
     {k:'team',l:'Team',fmt:'str',g:''},
+    {k:'maxScore',l:'Max',fmt:'int',g:''},
     {k:'maxScoreNear',l:'MAX',fmt:'int',g:'Total Near'},
     {k:'avgScoreNear',l:'AVG',fmt:'f0',g:'Total Near'},
     {k:'maxScoreFar',l:'MAX',fmt:'int',g:'Total Far'},
     {k:'avgScoreFar',l:'AVG',fmt:'f0',g:'Total Far'},
     {k:'autoMaxNear',l:'MAX',fmt:'int',g:'Auto Near'},
     {k:'autoAvgNear',l:'AVG',fmt:'f0',g:'Auto Near'},
+    {k:'leverRate',l:'Lev%',fmt:'pct2',g:'Auto Near'},
     {k:'autoMaxFar',l:'MAX',fmt:'int',g:'Auto Far'},
     {k:'autoAvgFar',l:'AVG',fmt:'f0',g:'Auto Far'},
     {k:'telMaxNear',l:'MAX',fmt:'int',g:'Tel Near'},
     {k:'telAvgNear',l:'AVG',fmt:'f0',g:'Tel Near'},
     {k:'telMaxFar',l:'MAX',fmt:'int',g:'Tel Far'},
-    {k:'telAvgFar',l:'AVG',fmt:'f0',g:'Tel Far'},
-    {k:'leverRate',l:'Lever',fmt:'pct2',g:''}
+    {k:'telAvgFar',l:'AVG',fmt:'f0',g:'Tel Far'}
   ];
 
   // Group header row
