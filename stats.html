@@ -179,17 +179,23 @@ function computeStats(name,ms){
     leverMatches++;
   }
 
+  // Convert balls to scores (*3)
+  var autoNearScores=[];for(var j=0;j<autoNearBalls.length;j++)autoNearScores.push(autoNearBalls[j]*3);
+  var autoFarScores=[];for(var j=0;j<autoFarBalls.length;j++)autoFarScores.push(autoFarBalls[j]*3);
+  var telNearScores=[];for(var j=0;j<telNearBalls.length;j++)telNearScores.push(telNearBalls[j]*3);
+  var telFarScores=[];for(var j=0;j<telFarBalls.length;j++)telFarScores.push(telFarBalls[j]*3);
+
   return {
     team:name,
     matchCount:ms.length,
-    autoMaxNear:Math.max.apply(null,autoNearBalls.length?autoNearBalls:[0]),
-    autoAvgNear:avg(autoNearBalls),
-    autoMaxFar:Math.max.apply(null,autoFarBalls.length?autoFarBalls:[0]),
-    autoAvgFar:avg(autoFarBalls),
-    telMaxNear:Math.max.apply(null,telNearBalls.length?telNearBalls:[0]),
-    telAvgNear:avg(telNearBalls),
-    telMaxFar:Math.max.apply(null,telFarBalls.length?telFarBalls:[0]),
-    telAvgFar:avg(telFarBalls),
+    autoMaxNear:Math.max.apply(null,autoNearScores.length?autoNearScores:[0]),
+    autoAvgNear:avg(autoNearScores),
+    autoMaxFar:Math.max.apply(null,autoFarScores.length?autoFarScores:[0]),
+    autoAvgFar:avg(autoFarScores),
+    telMaxNear:Math.max.apply(null,telNearScores.length?telNearScores:[0]),
+    telAvgNear:avg(telNearScores),
+    telMaxFar:Math.max.apply(null,telFarScores.length?telFarScores:[0]),
+    telAvgFar:avg(telFarScores),
     maxScoreNear:Math.max.apply(null,nearScores.length?nearScores:[0]),
     avgScoreNear:avg(nearScores),
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
@@ -221,19 +227,19 @@ function renderTable(stats){
   var cols=[
     {k:'rank',l:'#',fmt:'int',g:''},
     {k:'team',l:'Team',fmt:'str',g:''},
-    {k:'autoMaxNear',l:'Mx',fmt:'int',g:'A-N'},
-    {k:'autoAvgNear',l:'Av',fmt:'f1',g:'A-N'},
-    {k:'autoMaxFar',l:'Mx',fmt:'int',g:'A-F'},
-    {k:'autoAvgFar',l:'Av',fmt:'f1',g:'A-F'},
-    {k:'telMaxNear',l:'Mx',fmt:'int',g:'T-N'},
-    {k:'telAvgNear',l:'Av',fmt:'f1',g:'T-N'},
-    {k:'telMaxFar',l:'Mx',fmt:'int',g:'T-F'},
-    {k:'telAvgFar',l:'Av',fmt:'f1',g:'T-F'},
-    {k:'maxScoreNear',l:'Mx',fmt:'int',g:'Sc-N'},
-    {k:'avgScoreNear',l:'Av',fmt:'f0',g:'Sc-N'},
-    {k:'maxScoreFar',l:'Mx',fmt:'int',g:'Sc-F'},
-    {k:'avgScoreFar',l:'Av',fmt:'f0',g:'Sc-F'},
-    {k:'leverRate',l:'Lv',fmt:'pct2',g:''}
+    {k:'autoMaxNear',l:'MAX',fmt:'int',g:'Auto Near'},
+    {k:'autoAvgNear',l:'AVG',fmt:'f0',g:'Auto Near'},
+    {k:'autoMaxFar',l:'MAX',fmt:'int',g:'Auto Far'},
+    {k:'autoAvgFar',l:'AVG',fmt:'f0',g:'Auto Far'},
+    {k:'telMaxNear',l:'MAX',fmt:'int',g:'Tel Near'},
+    {k:'telAvgNear',l:'AVG',fmt:'f0',g:'Tel Near'},
+    {k:'telMaxFar',l:'MAX',fmt:'int',g:'Tel Far'},
+    {k:'telAvgFar',l:'AVG',fmt:'f0',g:'Tel Far'},
+    {k:'maxScoreNear',l:'MAX',fmt:'int',g:'Total Near'},
+    {k:'avgScoreNear',l:'AVG',fmt:'f0',g:'Total Near'},
+    {k:'maxScoreFar',l:'MAX',fmt:'int',g:'Total Far'},
+    {k:'avgScoreFar',l:'AVG',fmt:'f0',g:'Total Far'},
+    {k:'leverRate',l:'Lever',fmt:'pct2',g:''}
   ];
 
   // Group header row
@@ -276,7 +282,7 @@ function renderTable(stats){
     h+='</tr>';
   }
   h+='</tbody></table></div>';
-  h+='<div class="note">Averages exclude matches with 0. Score = balls × 3. Tap column headers to sort.</div>';
+  h+='<div class="note">All values are scores (balls × 3). Averages exclude 0 matches. Tap headers to sort.</div>';
 
   document.getElementById('content').innerHTML=h;
 }
@@ -370,9 +376,9 @@ function renderRecCard(candidates,title,cls,type){
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
     var detail='';
     if(type==='near'){
-      detail='Max:'+c.maxScoreNear+' Avg:'+Math.round(c.avgScoreNear)+' | A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%';
+      detail='Max:'+c.maxScoreNear+' Avg:'+Math.round(c.avgScoreNear)+' | Auto:'+Math.round(c.autoAvgNear)+' Tel:'+Math.round(c.telAvgNear)+' Lev:'+c.leverRate+'%';
     } else {
-      detail='Max:'+c.maxScoreFar+' Avg:'+Math.round(c.avgScoreFar)+' | A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1);
+      detail='Max:'+c.maxScoreFar+' Avg:'+Math.round(c.avgScoreFar)+' | Auto:'+Math.round(c.autoAvgFar)+' Tel:'+Math.round(c.telAvgFar);
     }
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
