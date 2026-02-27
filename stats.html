@@ -77,7 +77,7 @@
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.2</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.3</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
 <div class="nav"><a href="?page=index">← Back to Scouting</a></div>
 
@@ -291,13 +291,12 @@ function renderRecommendations(stats){
     }
   }
   nearCandidates.sort(function(a,b){
+    if(b.maxScoreNear!==a.maxScoreNear)return b.maxScoreNear-a.maxScoreNear;
     if(b.avgScoreNear!==a.avgScoreNear)return b.avgScoreNear-a.avgScoreNear;
-    if(b.autoAvgNear!==a.autoAvgNear)return b.autoAvgNear-a.autoAvgNear;
-    if(b.telAvgNear!==a.telAvgNear)return b.telAvgNear-a.telAvgNear;
     return b.leverRate-a.leverRate;
   });
 
-  // Best Far: sorted by avg far score, avg far auto, avg far teleop
+  // Best Far: sorted by max far score, avg far score
   var farCandidates=[];
   for(var i=0;i<stats.length;i++){
     var s=stats[i];
@@ -306,13 +305,12 @@ function renderRecommendations(stats){
     }
   }
   farCandidates.sort(function(a,b){
-    if(b.avgScoreFar!==a.avgScoreFar)return b.avgScoreFar-a.avgScoreFar;
-    if(b.autoAvgFar!==a.autoAvgFar)return b.autoAvgFar-a.autoAvgFar;
-    return b.telAvgFar-a.telAvgFar;
+    if(b.maxScoreFar!==a.maxScoreFar)return b.maxScoreFar-a.maxScoreFar;
+    return b.avgScoreFar-a.avgScoreFar;
   });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Ranked by: near/far score (balls×3), then auto balls, then teleop balls (near also considers lever hit).</div>';
+  h+='<div class="note">Ranked by: max score, avg score, lever hit (near only).</div>';
   h+='<div class="rec-grid">';
   h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
   h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
@@ -337,9 +335,9 @@ function renderRecCard(candidates,title,cls,type){
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
     var detail='';
     if(type==='near'){
-      detail='A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%'+' | Avg:'+Math.round(c.avgScoreNear)+' Max:'+c.maxScoreNear;
+      detail='Max:'+c.maxScoreNear+' Avg:'+Math.round(c.avgScoreNear)+' | A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%';
     } else {
-      detail='A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1)+' | Avg:'+Math.round(c.avgScoreFar)+' Max:'+c.maxScoreFar;
+      detail='Max:'+c.maxScoreFar+' Avg:'+Math.round(c.avgScoreFar)+' | A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1);
     }
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
