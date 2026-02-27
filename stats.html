@@ -17,7 +17,7 @@
 
   /* Stats table */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
-  table{border-collapse:collapse;width:100%;min-width:900px;font-size:0.7rem}
+  table{border-collapse:collapse;width:100%;min-width:500px;font-size:0.65rem}
   th,td{padding:5px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
   th{
     background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
@@ -98,7 +98,7 @@
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.4</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.5</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
 <div class="nav"><a href="index.html">← Back to Scouting</a></div>
 
@@ -182,20 +182,18 @@ function computeStats(name,ms){
   return {
     team:name,
     matchCount:ms.length,
+    autoMaxNear:Math.max.apply(null,autoNearBalls.length?autoNearBalls:[0]),
     autoAvgNear:avg(autoNearBalls),
-    autoAccNear:acc(autoNearBallsTotal,autoNearShoots),
+    autoMaxFar:Math.max.apply(null,autoFarBalls.length?autoFarBalls:[0]),
     autoAvgFar:avg(autoFarBalls),
-    autoAccFar:acc(autoFarBallsTotal,autoFarShoots),
+    telMaxNear:Math.max.apply(null,telNearBalls.length?telNearBalls:[0]),
     telAvgNear:avg(telNearBalls),
-    telAccNear:acc(telNearBallsTotal,telNearShoots),
+    telMaxFar:Math.max.apply(null,telFarBalls.length?telFarBalls:[0]),
     telAvgFar:avg(telFarBalls),
-    telAccFar:acc(telFarBallsTotal,telFarShoots),
-    avgScoreNear:avg(nearScores),
-    avgScoreFar:avg(farScores),
     maxScoreNear:Math.max.apply(null,nearScores.length?nearScores:[0]),
+    avgScoreNear:avg(nearScores),
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
-    avgScore:avg(allScores),
-    maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
+    avgScoreFar:avg(farScores),
     leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
   };
 }
@@ -217,24 +215,34 @@ var currentStats=[];
 function renderTable(stats){
   currentStats=stats;
   var cols=[
-    {k:'team',l:'Team',fmt:'str'},
-    {k:'matchCount',l:'#',fmt:'int'},
-    {k:'autoAvgNear',l:'Auto Avg Near',fmt:'f1'},
-    {k:'autoAccNear',l:'Auto Acc Near',fmt:'pct'},
-    {k:'autoAvgFar',l:'Auto Avg Far',fmt:'f1'},
-    {k:'autoAccFar',l:'Auto Acc Far',fmt:'pct'},
-    {k:'telAvgNear',l:'Tel Avg Near',fmt:'f1'},
-    {k:'telAccNear',l:'Tel Acc Near',fmt:'pct'},
-    {k:'telAvgFar',l:'Tel Avg Far',fmt:'f1'},
-    {k:'telAccFar',l:'Tel Acc Far',fmt:'pct'},
-    {k:'avgScoreNear',l:'Avg Score Near',fmt:'f0'},
-    {k:'avgScoreFar',l:'Avg Score Far',fmt:'f0'},
-    {k:'maxScore',l:'Max Score',fmt:'int'},
-    {k:'leverRate',l:'Lever %',fmt:'pct2'}
+    {k:'team',l:'Team',fmt:'str',g:''},
+    {k:'matchCount',l:'#',fmt:'int',g:''},
+    {k:'autoMaxNear',l:'Mx',fmt:'int',g:'A-N'},
+    {k:'autoAvgNear',l:'Av',fmt:'f1',g:'A-N'},
+    {k:'autoMaxFar',l:'Mx',fmt:'int',g:'A-F'},
+    {k:'autoAvgFar',l:'Av',fmt:'f1',g:'A-F'},
+    {k:'telMaxNear',l:'Mx',fmt:'int',g:'T-N'},
+    {k:'telAvgNear',l:'Av',fmt:'f1',g:'T-N'},
+    {k:'telMaxFar',l:'Mx',fmt:'int',g:'T-F'},
+    {k:'telAvgFar',l:'Av',fmt:'f1',g:'T-F'},
+    {k:'maxScoreNear',l:'Mx',fmt:'int',g:'Sc-N'},
+    {k:'avgScoreNear',l:'Av',fmt:'f0',g:'Sc-N'},
+    {k:'maxScoreFar',l:'Mx',fmt:'int',g:'Sc-F'},
+    {k:'avgScoreFar',l:'Av',fmt:'f0',g:'Sc-F'},
+    {k:'leverRate',l:'Lv',fmt:'pct2',g:''}
   ];
 
+  // Group header row
   var h='<div class="tbl-wrap"><table><thead><tr>';
+  var gi=0;
+  while(gi<cols.length){
+    if(!cols[gi].g){h+='<th rowspan="2" onclick="sortTable(\''+cols[gi].k+'\')">'+cols[gi].l+'</th>';gi++;}
+    else{var gn=cols[gi].g,span=0;for(var j=gi;j<cols.length&&cols[j].g===gn;j++)span++;
+      h+='<th colspan="'+span+'" style="cursor:default">'+gn+'</th>';gi+=span;}
+  }
+  h+='</tr><tr>';
   for(var c=0;c<cols.length;c++){
+    if(!cols[c].g)continue;
     var cls='';
     if(currentSort.col===cols[c].k)cls=currentSort.dir==='asc'?' class="sort-asc"':' class="sort-desc"';
     h+='<th'+cls+' onclick="sortTable(\''+cols[c].k+'\')">'+cols[c].l+'</th>';
@@ -264,7 +272,7 @@ function renderTable(stats){
     h+='</tr>';
   }
   h+='</tbody></table></div>';
-  h+='<div class="note">Averages exclude matches with 0 (team not playing that position). Accuracy = balls / (shoots × 3). Tap column headers to sort.</div>';
+  h+='<div class="note">Averages exclude matches with 0. Score = balls × 3. Tap column headers to sort.</div>';
 
   document.getElementById('content').innerHTML=h;
 }
