@@ -289,13 +289,13 @@ function renderRecommendations(stats){
     }
   }
   nearCandidates.sort(function(a,b){
-    if(b.maxScore!==a.maxScore)return b.maxScore-a.maxScore;
+    if(b.avgScoreNear!==a.avgScoreNear)return b.avgScoreNear-a.avgScoreNear;
     if(b.autoAvgNear!==a.autoAvgNear)return b.autoAvgNear-a.autoAvgNear;
     if(b.telAvgNear!==a.telAvgNear)return b.telAvgNear-a.telAvgNear;
     return b.leverRate-a.leverRate;
   });
 
-  // Best Far: sorted by max score, avg far auto, avg far teleop
+  // Best Far: sorted by avg far score, avg far auto, avg far teleop
   var farCandidates=[];
   for(var i=0;i<stats.length;i++){
     var s=stats[i];
@@ -304,13 +304,13 @@ function renderRecommendations(stats){
     }
   }
   farCandidates.sort(function(a,b){
-    if(b.maxScore!==a.maxScore)return b.maxScore-a.maxScore;
+    if(b.avgScoreFar!==a.avgScoreFar)return b.avgScoreFar-a.avgScoreFar;
     if(b.autoAvgFar!==a.autoAvgFar)return b.autoAvgFar-a.autoAvgFar;
     return b.telAvgFar-a.telAvgFar;
   });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Ranked by: max score, then avg auto, then avg teleop (near also considers lever hit).</div>';
+  h+='<div class="note">Ranked by: near/far score (balls×3), then auto balls, then teleop balls (near also considers lever hit).</div>';
   h+='<div class="rec-grid">';
   h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
   h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
@@ -335,9 +335,9 @@ function renderRecCard(candidates,title,cls,type){
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
     var detail='';
     if(type==='near'){
-      detail='Lever:'+c.leverRate+'% AutoN:'+c.autoAvgNear.toFixed(1)+' TelN:'+c.telAvgNear.toFixed(1);
+      detail=Math.round(c.avgScoreNear)+'pts A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%';
     } else {
-      detail='AutoF:'+c.autoAvgFar.toFixed(1)+' TelF:'+c.telAvgFar.toFixed(1);
+      detail=Math.round(c.avgScoreFar)+'pts A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1);
     }
     detail+=' | Avg:'+Math.round(c.avgScore)+' Max:'+c.maxScore;
     h+='<li>';
