@@ -73,13 +73,34 @@
   .refresh-btn:active{transform:scale(0.97)}
 
   .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+
+  /* Alliance selection */
+  .alliance-section{margin-bottom:20px}
+  .alliance-select{
+    display:block;margin:8px auto;padding:8px 12px;border:none;border-radius:6px;
+    background:rgba(255,255,255,0.13);color:#fff;font-size:0.8rem;
+    outline:none;-webkit-appearance:none;appearance:none;min-width:200px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='white' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;padding-right:20px;
+  }
+  .alliance-select option{color:#000;background:#fff}
+  .alliance-pick{
+    padding:8px 10px;margin-bottom:4px;border-radius:6px;
+    background:rgba(255,255,255,0.04);font-size:0.75rem;
+    display:flex;align-items:center;
+  }
+  .alliance-pick-pos{
+    font-size:0.55rem;padding:2px 5px;border-radius:3px;margin-left:6px;font-weight:600;
+  }
+  .pos-near{background:rgba(230,126,34,0.25);color:#e67e22}
+  .pos-far{background:rgba(52,152,219,0.25);color:#3498db}
 </style>
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.3</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.4</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
-<div class="nav"><a href="?page=index">← Back to Scouting</a></div>
+<div class="nav"><a href="index.html">← Back to Scouting</a></div>
 
 <div id="content"><div class="loading">Loading data from sheet...</div></div>
 
@@ -118,6 +139,7 @@ function onData(json){
 
   renderTable(stats);
   renderRecommendations(stats);
+  renderAllianceSelection(stats);
 }
 
 function computeStats(name,ms){
@@ -278,6 +300,7 @@ function sortTable(col){
   });
   renderTable(currentStats);
   renderRecommendations(currentStats);
+  renderAllianceSelection(currentStats);
 }
 
 // Recommendation engine
@@ -348,6 +371,81 @@ function renderRecCard(candidates,title,cls,type){
   if(!max)h+='<li style="opacity:0.4">No data yet</li>';
   h+='</ol></div>';
   return h;
+}
+
+// Alliance selection
+var allianceStats=[];
+
+function renderAllianceSelection(stats){
+  allianceStats=stats;
+  var existing=document.getElementById('alliance-container');
+  if(existing)existing.remove();
+  var div=document.createElement('div');
+  div.id='alliance-container';
+  var h='<div class="alliance-section"><h2>Alliance Selection</h2>';
+  h+='<div class="note">Pick your team to see the best partners ranked by combined max score.</div>';
+  h+='<select class="alliance-select" id="alliance-team" onchange="updateAlliancePicks()">';
+  h+='<option value="">-- Select Your Team --</option>';
+  var sorted=stats.slice().sort(function(a,b){return a.team<b.team?-1:1});
+  for(var i=0;i<sorted.length;i++){
+    h+='<option value="'+sorted[i].team+'">'+sorted[i].team+'</option>';
+  }
+  h+='</select>';
+  h+='<div id="alliance-results"></div>';
+  h+='</div>';
+  div.innerHTML=h;
+  document.getElementById('content').appendChild(div);
+}
+
+function updateAlliancePicks(){
+  var sel=document.getElementById('alliance-team');
+  var myName=sel.value;
+  var resultsDiv=document.getElementById('alliance-results');
+  if(!myName){resultsDiv.innerHTML='';return;}
+
+  var me=null;
+  for(var i=0;i<allianceStats.length;i++){
+    if(allianceStats[i].team===myName){me=allianceStats[i];break;}
+  }
+  if(!me){resultsDiv.innerHTML='';return;}
+
+  var picks=[];
+  for(var i=0;i<allianceStats.length;i++){
+    var p=allianceStats[i];
+    if(p.team===myName)continue;
+    // Scenario A: me=near, partner=far
+    var maxA=me.maxScoreNear+p.maxScoreFar;
+    var avgA=me.avgScoreNear+p.avgScoreFar;
+    // Scenario B: me=far, partner=near
+    var maxB=me.maxScoreFar+p.maxScoreNear;
+    var avgB=me.avgScoreFar+p.avgScoreNear;
+    if(maxA>=maxB){
+      picks.push({team:p.team,combinedMax:maxA,combinedAvg:avgA,mePos:'Near',partnerPos:'Far'});
+    } else {
+      picks.push({team:p.team,combinedMax:maxB,combinedAvg:avgB,mePos:'Far',partnerPos:'Near'});
+    }
+  }
+  picks.sort(function(a,b){return b.combinedMax-a.combinedMax});
+
+  var h='<ol class="rec-list" style="margin-top:8px">';
+  var max=Math.min(picks.length,12);
+  for(var i=0;i<max;i++){
+    var pk=picks[i];
+    var badge='';
+    if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
+    else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
+    else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
+    h+='<li>';
+    h+='<span class="rec-rank">'+(i+1)+'</span>';
+    h+='<span class="rec-name">'+pk.team+badge+'</span>';
+    h+='<span class="alliance-pick-pos pos-'+(pk.mePos==='Near'?'near':'far')+'">You:'+pk.mePos+'</span>';
+    h+='<span class="alliance-pick-pos pos-'+(pk.partnerPos==='Near'?'near':'far')+'">P:'+pk.partnerPos+'</span>';
+    h+='<span class="rec-detail">Max:'+Math.round(pk.combinedMax)+' Avg:'+Math.round(pk.combinedAvg)+'</span>';
+    h+='</li>';
+  }
+  if(!max)h+='<li style="opacity:0.4">No partner data</li>';
+  h+='</ol>';
+  resultsDiv.innerHTML=h;
 }
 
 // Load on start
