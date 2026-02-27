@@ -402,7 +402,7 @@ function renderAllianceSelection(stats){
   var div=document.createElement('div');
   div.id='alliance-container';
   var h='<div class="alliance-section"><h2>Alliance Selection</h2>';
-  h+='<div class="note">Pick your team to see the best partners ranked by combined max score.</div>';
+  h+='<div class="note">Finds best auto/teleop near/far combo per partner to maximize total score.</div>';
   h+='<select class="alliance-select" id="alliance-team" onchange="updateAlliancePicks()">';
   h+='<option value="">-- Select Your Team --</option>';
   var sorted=stats.slice().sort(function(a,b){return a.team<b.team?-1:1});
@@ -432,19 +432,35 @@ function updateAlliancePicks(){
   for(var i=0;i<allianceStats.length;i++){
     var p=allianceStats[i];
     if(p.team===myName)continue;
-    // Scenario A: me=near, partner=far
-    var maxA=me.maxScoreNear+p.maxScoreFar;
-    var avgA=me.avgScoreNear+p.avgScoreFar;
-    // Scenario B: me=far, partner=near
-    var maxB=me.maxScoreFar+p.maxScoreNear;
-    var avgB=me.avgScoreFar+p.avgScoreNear;
-    if(maxA>=maxB){
-      picks.push({team:p.team,combinedMax:maxA,combinedAvg:avgA,mePos:'Near',partnerPos:'Far'});
-    } else {
-      picks.push({team:p.team,combinedMax:maxB,combinedAvg:avgB,mePos:'Far',partnerPos:'Near'});
+    // Try all 4 auto/teleop combos: me auto pos + me teleop pos
+    var combos=[
+      {meAuto:'Near',meTel:'Near',pAuto:'Far',pTel:'Far'},
+      {meAuto:'Near',meTel:'Far',pAuto:'Far',pTel:'Near'},
+      {meAuto:'Far',meTel:'Near',pAuto:'Near',pTel:'Far'},
+      {meAuto:'Far',meTel:'Far',pAuto:'Near',pTel:'Near'}
+    ];
+    var best=null;
+    for(var c=0;c<combos.length;c++){
+      var cb=combos[c];
+      var meAutoMax=cb.meAuto==='Near'?me.autoMaxNear:me.autoMaxFar;
+      var meAutoAvg=cb.meAuto==='Near'?me.autoAvgNear:me.autoAvgFar;
+      var meTelMax=cb.meTel==='Near'?me.telMaxNear:me.telMaxFar;
+      var meTelAvg=cb.meTel==='Near'?me.telAvgNear:me.telAvgFar;
+      var pAutoMax=cb.pAuto==='Near'?p.autoMaxNear:p.autoMaxFar;
+      var pAutoAvg=cb.pAuto==='Near'?p.autoAvgNear:p.autoAvgFar;
+      var pTelMax=cb.pTel==='Near'?p.telMaxNear:p.telMaxFar;
+      var pTelAvg=cb.pTel==='Near'?p.telAvgNear:p.telAvgFar;
+      var totalMax=meAutoMax+meTelMax+pAutoMax+pTelMax;
+      var totalAvg=meAutoAvg+meTelAvg+pAutoAvg+pTelAvg;
+      if(!best||totalMax>best.totalMax){
+        best={team:p.team,totalMax:totalMax,totalAvg:totalAvg,
+          meAuto:cb.meAuto,meTel:cb.meTel,pAuto:cb.pAuto,pTel:cb.pTel,
+          meAutoMax:meAutoMax,meTelMax:meTelMax,pAutoMax:pAutoMax,pTelMax:pTelMax};
+      }
     }
+    picks.push(best);
   }
-  picks.sort(function(a,b){return b.combinedMax-a.combinedMax});
+  picks.sort(function(a,b){return b.totalMax-a.totalMax});
 
   var h='<ol class="rec-list" style="margin-top:8px">';
   var max=Math.min(picks.length,12);
@@ -454,13 +470,16 @@ function updateAlliancePicks(){
     if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
     else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
-    h+='<li>';
+    h+='<li style="flex-wrap:wrap">';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
     h+='<span class="rec-name">'+pk.team+badge+'</span>';
-    h+='<span class="alliance-pick-pos pos-'+(pk.mePos==='Near'?'near':'far')+'">You:'+pk.mePos+'</span>';
-    h+='<span class="alliance-pick-pos pos-'+(pk.partnerPos==='Near'?'near':'far')+'">P:'+pk.partnerPos+'</span>';
-    h+='<span class="rec-detail">Max:'+Math.round(pk.combinedMax)+' Avg:'+Math.round(pk.combinedAvg)+'</span>';
-    h+='</li>';
+    h+='<span class="rec-detail">Max:'+Math.round(pk.totalMax)+' Avg:'+Math.round(pk.totalAvg)+'</span>';
+    h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
+    h+='You: <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
+    h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+pk.meTelMax+')</span> ';
+    h+='P: <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+pk.pAutoMax+')</span> ';
+    h+='<span class="alliance-pick-pos pos-'+(pk.pTel==='Near'?'near':'far')+'">T:'+pk.pTel+'('+pk.pTelMax+')</span>';
+    h+='</div></li>';
   }
   if(!max)h+='<li style="opacity:0.4">No partner data</li>';
   h+='</ol>';
