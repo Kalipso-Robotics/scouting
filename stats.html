@@ -170,6 +170,8 @@ function computeStats(name,ms){
     telAccFar:acc(telFarBallsTotal,telFarShoots),
     avgScoreNear:avg(nearScores),
     avgScoreFar:avg(farScores),
+    maxScoreNear:Math.max.apply(null,nearScores.length?nearScores:[0]),
+    maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
     avgScore:avg(allScores),
     maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
     leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
@@ -335,11 +337,10 @@ function renderRecCard(candidates,title,cls,type){
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
     var detail='';
     if(type==='near'){
-      detail=Math.round(c.avgScoreNear)+'pts A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%';
+      detail='A:'+c.autoAvgNear.toFixed(1)+' T:'+c.telAvgNear.toFixed(1)+' Lev:'+c.leverRate+'%'+' | Avg:'+Math.round(c.avgScoreNear)+' Max:'+c.maxScoreNear;
     } else {
-      detail=Math.round(c.avgScoreFar)+'pts A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1);
+      detail='A:'+c.autoAvgFar.toFixed(1)+' T:'+c.telAvgFar.toFixed(1)+' | Avg:'+Math.round(c.avgScoreFar)+' Max:'+c.maxScoreFar;
     }
-    detail+=' | Avg:'+Math.round(c.avgScore)+' Max:'+c.maxScore;
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
     h+='<span class="rec-name">'+c.team+badge+'</span>';
