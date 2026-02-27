@@ -439,10 +439,14 @@ function submitData(){
   for(var i=0;i<rows.length;i++) rows[i].alliance_score=allianceScores[rows[i].alliance];
   var btn=document.querySelector('.sub-btn');
   btn.disabled=true;btn.textContent='SENDING...';
-  google.script.run
-    .withSuccessHandler(function(r){showToast('Submitted! '+r);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
-    .withFailureHandler(function(e){showToast('Error: '+e.message,true);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
-    .submitRows(JSON.stringify(rows));
+  fetch('https://script.google.com/macros/s/AKfycbwDhVmXeI1Ic95zEL7I7Dggic8Bg5bS6bV8UQpcgFxzKzF2lc4V8gr_8hwVeTLPS-2x/exec',{
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(rows)
+  })
+  .then(function(res){return res.text()})
+  .then(function(r){showToast('Submitted! '+r);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
+  .catch(function(e){showToast('Error: '+e.message,true);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'});
 }
 
 function resetAll(){
