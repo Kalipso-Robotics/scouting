@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kalipso Decode Scouting</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#1a1a2e;color:#fff;min-height:100vh;padding:6px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  h1{text-align:center;font-size:1.1rem;padding:5px 0;letter-spacing:1px;color:#eee}
+
+  .match-row{display:flex;gap:6px;margin-bottom:5px}
+  .match-input{
+    flex:1;padding:7px;border:none;border-radius:6px;
+    background:rgba(255,255,255,0.12);color:#fff;font-size:0.9rem;
+    text-align:center;outline:none;
+  }
+  .match-input::placeholder{color:rgba(255,255,255,0.3)}
+
+  /* Team picks: 2 columns matching field */
+  .picks{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}
+  .pick-col{display:flex;flex-direction:column;gap:3px}
+  .pick-hdr{
+    font-size:0.65rem;font-weight:700;text-transform:uppercase;
+    text-align:center;letter-spacing:1px;padding:2px;border-radius:4px;
+  }
+  .pick-hdr-red{background:rgba(200,40,40,0.4)}
+  .pick-hdr-blue{background:rgba(40,80,200,0.4)}
+  .team-select{
+    width:100%;padding:6px 4px;border:none;border-radius:5px;
+    background:rgba(255,255,255,0.13);color:#fff;font-size:0.75rem;
+    outline:none;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='white' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 5px center;padding-right:16px;
+  }
+  .team-select option{color:#000;background:#fff}
+  .pick-lbl{font-size:0.55rem;opacity:0.5;text-transform:uppercase;padding-left:2px}
+
+  /* Phase */
+  .phase-title{
+    text-align:center;font-size:0.8rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:2px;padding:4px 0;margin-bottom:3px;
+    background:rgba(0,0,0,0.3);border-radius:6px;
+  }
+  .phase-section{margin-bottom:6px}
+
+  /* Field layout: Blue left, Red right */
+  .field{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .side{border-radius:8px;padding:4px}
+  .side-red{background:linear-gradient(180deg,#6e1515,#451010)}
+  .side-blue{background:linear-gradient(180deg,#153a6e,#101d45)}
+  .side-hdr{
+    text-align:center;font-size:0.6rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:1px;opacity:0.6;margin-bottom:2px;
+  }
+
+  /* Team block inside a side */
+  .tb{background:rgba(255,255,255,0.07);border-radius:6px;padding:5px;margin-bottom:3px}
+  .tb:last-child{margin-bottom:0}
+  .tb-name{
+    font-size:0.6rem;font-weight:700;text-align:center;opacity:0.6;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;
+  }
+  .p-stats{
+    text-align:center;font-size:0.6rem;font-weight:600;
+    background:rgba(0,0,0,0.25);border-radius:3px;padding:2px;margin-bottom:2px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .tog-row{display:flex;border-radius:4px;overflow:hidden;margin-bottom:2px}
+  .tog-btn{
+    flex:1;padding:3px 0;border:none;font-size:0.65rem;font-weight:700;
+    cursor:pointer;color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);
+    text-transform:uppercase;
+  }
+  .tog-btn.a-near{background:#d35400;color:#fff}
+  .tog-btn.a-far{background:#2980b9;color:#fff}
+
+  .nf{display:flex;gap:2px;margin-bottom:2px}
+  .nf-s{flex:1;text-align:center;padding:1px;border-radius:3px;font-size:0.5rem;font-weight:600}
+  .nf-n{background:rgba(230,126,34,0.2);color:#e67e22}
+  .nf-f{background:rgba(52,152,219,0.2);color:#3498db}
+
+  .b-row{display:flex;gap:3px;margin-bottom:2px}
+  .s-btn{
+    flex:1;padding:10px 0;border:none;border-radius:6px;
+    font-size:1rem;font-weight:700;cursor:pointer;color:#fff;
+  }
+  .s-btn:active{transform:scale(0.9);opacity:0.8}
+  .s1{background:linear-gradient(135deg,#e67e22,#d35400)}
+  .s2{background:linear-gradient(135deg,#2ecc71,#27ae60)}
+  .s3{background:linear-gradient(135deg,#9b59b6,#8e44ad)}
+  .u-btn{
+    width:100%;padding:3px;border:none;border-radius:3px;
+    font-size:0.55rem;font-weight:600;cursor:pointer;
+    color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);
+  }
+
+  .lev-row{
+    display:flex;align-items:center;gap:4px;
+    padding:2px 4px;background:rgba(0,0,0,0.2);border-radius:4px;margin-top:2px;
+  }
+  .lev-lbl{font-size:0.55rem;font-weight:600;flex:1;text-transform:uppercase}
+  .lev-tog{position:relative;width:32px;height:17px;cursor:pointer;flex-shrink:0}
+  .lev-tog input{display:none}
+  .lev-sl{
+    position:absolute;inset:0;background:rgba(255,255,255,0.15);
+    border-radius:9px;transition:background 0.2s;
+  }
+  .lev-sl::after{
+    content:'';position:absolute;top:2px;left:2px;
+    width:13px;height:13px;background:#fff;
+    border-radius:50%;transition:transform 0.2s;
+  }
+  .lev-tog input:checked+.lev-sl{background:#2ecc71}
+  .lev-tog input:checked+.lev-sl::after{transform:translateX(15px)}
+
+  /* Totals: 4 columns */
+  .totals-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin-bottom:6px}
+  .t-box{background:rgba(0,0,0,0.25);border-radius:5px;padding:4px;text-align:center}
+  .t-box-red{border-top:2px solid rgba(200,40,40,0.5)}
+  .t-box-blue{border-top:2px solid rgba(40,80,200,0.5)}
+  .t-name{font-size:0.5rem;opacity:0.5;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .t-val{font-size:0.95rem;font-weight:700;font-variant-numeric:tabular-nums}
+  .t-lbl{font-size:0.45rem;opacity:0.4;text-transform:uppercase}
+  .t-score{font-size:1.1rem;font-weight:700;color:#f1c40f;font-variant-numeric:tabular-nums}
+  .t-score-lbl{font-size:0.45rem;opacity:0.5;text-transform:uppercase;color:#f1c40f}
+
+  /* Alliance totals */
+  .alliance-totals{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}
+  .at-box{border-radius:6px;padding:6px;text-align:center}
+  .at-box-blue{background:rgba(40,80,200,0.25);border:1px solid rgba(40,80,200,0.4)}
+  .at-box-red{background:rgba(200,40,40,0.25);border:1px solid rgba(200,40,40,0.4)}
+  .at-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.7}
+  .at-val{font-size:1.4rem;font-weight:700;color:#f1c40f;font-variant-numeric:tabular-nums}
+
+  .sub-section{text-align:center;margin:6px 0 20px}
+  .sub-btn{
+    width:100%;padding:13px;border:none;border-radius:10px;
+    background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;
+    font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:1px;
+  }
+  .sub-btn:active{transform:scale(0.97)}
+  .sub-btn:disabled{opacity:0.5;background:#555}
+  .rst-btn{
+    margin-top:6px;padding:8px 20px;
+    border:2px solid rgba(255,255,255,0.2);border-radius:6px;
+    background:transparent;color:rgba(255,255,255,0.5);font-size:0.8rem;cursor:pointer;
+  }
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:#00b894;color:#fff;padding:10px 20px;
+    border-radius:8px;font-weight:600;font-size:0.85rem;
+    transition:transform 0.3s;z-index:100;pointer-events:none;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.error{background:#e74c3c}
+</style>
+</head>
+<body>
+
+<h1>KALIPSO DECODE SCOUTING</h1>
+
+<div class="match-row">
+  <input type="text" class="match-input" id="matchNumber" placeholder="Match #">
+  <input type="text" class="match-input" id="scouterName" placeholder="Scouter">
+</div>
+
+<!-- Team picks: Blue left, Red right -->
+<div class="picks">
+  <div class="pick-col">
+    <div class="pick-hdr pick-hdr-blue">Blue</div>
+    <div class="pick-lbl">T1 (Near)</div>
+    <select class="team-select" id="blue1-name" onchange="sync('blue1')"></select>
+    <div class="pick-lbl">T2 (Far)</div>
+    <select class="team-select" id="blue2-name" onchange="sync('blue2')"></select>
+  </div>
+  <div class="pick-col">
+    <div class="pick-hdr pick-hdr-red">Red</div>
+    <div class="pick-lbl">T1 (Near)</div>
+    <select class="team-select" id="red1-name" onchange="sync('red1')"></select>
+    <div class="pick-lbl">T2 (Far)</div>
+    <select class="team-select" id="red2-name" onchange="sync('red2')"></select>
+  </div>
+</div>
+
+<div class="phase-section" id="auto-section"></div>
+<div class="phase-section" id="teleop-section"></div>
+<div class="totals-grid" id="totals-grid"></div>
+<div class="alliance-totals" id="alliance-totals"></div>
+
+<div class="sub-section">
+  <button class="sub-btn" onclick="submitData()">SUBMIT TO SHEET</button>
+  <button class="rst-btn" onclick="resetAll()">Reset All</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var TEAMS=[
+  {n:31616,m:'404 Not Found'},{n:16026,m:'Alphabots'},{n:19819,m:'AstroBruins'},
+  {n:31174,m:'Aztec Robotics'},{n:23224,m:'Cheesy Bytes'},{n:14493,m:'CometBOTs'},
+  {n:9784,m:'Dry Ice'},{n:17094,m:'E.G.G.'},{n:16278,m:'Error 404 - Team Not Found'},
+  {n:25690,m:'Evergreen Tech-a-Trons'},{n:21454,m:'GalaxyBots'},{n:26401,m:'Hepha'},
+  {n:27621,m:'Heron Robotics'},{n:9614,m:'Hyperion'},{n:16533,m:'Infernobots'},
+  {n:5773,m:'Ink and Metal'},{n:23393,m:'JFK Robotics'},{n:23346,m:'Kalipso Robotics'},
+  {n:30592,m:'Little Potato'},{n:18466,m:'Mastermindz'},{n:20163,m:'Metal Maniacs'},
+  {n:7854,m:'MidKnight Madness'},{n:6165,m:'MSET CuttleFish'},{n:18340,m:'Polaris Robotics'},
+  {n:27090,m:'QuantaMania'},{n:25627,m:'Robowarriors'},{n:25961,m:'RRR Riftbots'},
+  {n:23292,m:'SuperPowered Jalapenos'},{n:21316,m:'Team Alpha'},{n:14525,m:'TerraBats'},
+  {n:26586,m:'The Argobots'},{n:8375,m:'Vulcan Robotics'}
+];
+
+var SLOTS=[
+  {id:'red1',alliance:'red',pos:1,defRange:'near'},
+  {id:'red2',alliance:'red',pos:2,defRange:'far'},
+  {id:'blue1',alliance:'blue',pos:1,defRange:'near'},
+  {id:'blue2',alliance:'blue',pos:2,defRange:'far'}
+];
+var IDS=['red1','red2','blue1','blue2'];
+
+var data={};
+for(var i=0;i<SLOTS.length;i++){
+  var s=SLOTS[i];
+  data[s.id]={
+    auto:{near:{shoots:0,balls:0},far:{shoots:0,balls:0},history:[],lever:false},
+    teleop:{near:{shoots:0,balls:0},far:{shoots:0,balls:0},history:[]},
+    range:{auto:s.defRange,teleop:s.defRange}
+  };
+}
+
+// Populate dropdowns
+var opts='<option value="">-- Select --</option>';
+for(var i=0;i<TEAMS.length;i++) opts+='<option value="'+TEAMS[i].n+'">'+TEAMS[i].m+' - '+TEAMS[i].n+'</option>';
+for(var i=0;i<IDS.length;i++) document.getElementById(IDS[i]+'-name').innerHTML=opts;
+
+function sync(id){
+  var sel=document.getElementById(id+'-name');
+  var posLabel=id.indexOf('1')>=0?'T1':'T2';
+  var rangeLabel=id.indexOf('1')>=0?'Near':'Far';
+  if(sel.selectedIndex>0){
+    var t=TEAMS[sel.selectedIndex-1];
+    var full=t.m+' - '+t.n;
+    // Auto labels: name + (Near/Far)
+    var autoEls=document.querySelectorAll('.cn-'+id+'-auto');
+    for(var i=0;i<autoEls.length;i++) autoEls[i].textContent=full+' ('+rangeLabel+')';
+    // Teleop labels: name only, no near/far
+    var teleopEls=document.querySelectorAll('.cn-'+id+'-teleop');
+    for(var i=0;i<teleopEls.length;i++) teleopEls[i].textContent=full;
+    // Totals: name only
+    var totEls=document.querySelectorAll('.cn-'+id+'-tot');
+    for(var i=0;i<totEls.length;i++) totEls[i].textContent=full;
+  } else {
+    var autoEls=document.querySelectorAll('.cn-'+id+'-auto');
+    for(var i=0;i<autoEls.length;i++) autoEls[i].textContent=posLabel+' ('+rangeLabel+')';
+    var teleopEls=document.querySelectorAll('.cn-'+id+'-teleop');
+    for(var i=0;i<teleopEls.length;i++) teleopEls[i].textContent=posLabel;
+    var totEls=document.querySelectorAll('.cn-'+id+'-tot');
+    for(var i=0;i<totEls.length;i++) totEls[i].textContent=posLabel;
+  }
+}
+
+// Build one team block for a phase
+function tb(id,ph,slot){
+  var lever=(ph==='auto');
+  var isNear=(slot.defRange==='near');
+  var nearCls=isNear?' a-near':'';
+  var farCls=isNear?'':' a-far';
+  var h='';
+  var posLabel=(slot.pos===1?'T1':'T2');
+  var defLabel=(ph==='auto')?(posLabel+' ('+(slot.defRange==='near'?'Near':'Far')+')'):posLabel;
+  var cnClass='cn-'+id+'-'+(ph==='auto'?'auto':'teleop');
+  h+='<div class="tb">';
+  h+='<div class="tb-name '+cnClass+'">'+defLabel+'</div>';
+  h+='<div class="p-stats" id="'+id+'-'+ph+'-stats">0 shots / 0</div>';
+  h+='<div class="tog-row">';
+  h+='<button class="tog-btn'+nearCls+'" id="'+id+'-'+ph+'-nb" onclick="sr(\''+id+'\',\''+ph+'\',\'near\')">Near</button>';
+  h+='<button class="tog-btn'+farCls+'" id="'+id+'-'+ph+'-fb" onclick="sr(\''+id+'\',\''+ph+'\',\'far\')">Far</button>';
+  h+='</div>';
+  h+='<div class="nf">';
+  h+='<div class="nf-s nf-n" id="'+id+'-'+ph+'-ns">N:0/0</div>';
+  h+='<div class="nf-s nf-f" id="'+id+'-'+ph+'-fs">F:0/0</div>';
+  h+='</div>';
+  h+='<div class="b-row">';
+  h+='<button class="s-btn s1" onclick="as(\''+id+'\',\''+ph+'\',1)">+1</button>';
+  h+='<button class="s-btn s2" onclick="as(\''+id+'\',\''+ph+'\',2)">+2</button>';
+  h+='<button class="s-btn s3" onclick="as(\''+id+'\',\''+ph+'\',3)">+3</button>';
+  h+='</div>';
+  h+='<button class="u-btn" onclick="us(\''+id+'\',\''+ph+'\')">Undo</button>';
+  if(lever){
+    h+='<div class="lev-row"><span class="lev-lbl">Lever</span>';
+    h+='<label class="lev-tog"><input type="checkbox" id="'+id+'-lever" onchange="data[\''+id+'\'].auto.lever=this.checked"><span class="lev-sl"></span></label></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+// Build phase: Red col (T1 top, T2 bottom) | Blue col (T1 top, T2 bottom)
+function buildPhase(ph){
+  var label=ph==='auto'?'AUTO':'TELEOP';
+  var h='<div class="phase-title">'+label+'</div>';
+  h+='<div class="field">';
+  // Blue side (left column)
+  h+='<div class="side side-blue">';
+  h+='<div class="side-hdr">Blue</div>';
+  h+=tb('blue1',ph,SLOTS[2]);
+  h+=tb('blue2',ph,SLOTS[3]);
+  h+='</div>';
+  // Red side (right column)
+  h+='<div class="side side-red">';
+  h+='<div class="side-hdr">Red</div>';
+  h+=tb('red1',ph,SLOTS[0]);
+  h+=tb('red2',ph,SLOTS[1]);
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+document.getElementById('auto-section').innerHTML=buildPhase('auto');
+document.getElementById('teleop-section').innerHTML=buildPhase('teleop');
+
+// Totals: Blue1, Blue2, Red1, Red2 (match field layout)
+var th='';
+var tOrder=['blue1','blue2','red1','red2'];
+var tCls2=['t-box-blue','t-box-blue','t-box-red','t-box-red'];
+for(var i=0;i<tOrder.length;i++){
+  var id=tOrder[i];
+  var slotIdx=IDS.indexOf(id);
+  th+='<div class="t-box '+tCls2[i]+'"><div class="t-name cn-'+id+'-tot">'+(SLOTS[slotIdx].pos===1?'T1':'T2')+'</div>';
+  th+='<div class="t-lbl">Shots</div><div class="t-val" id="'+id+'-ts">0</div>';
+  th+='<div class="t-lbl">Balls</div><div class="t-val" id="'+id+'-tb">0</div>';
+  th+='<div class="t-score-lbl">Score</div><div class="t-score" id="'+id+'-sc">0</div>';
+  th+='</div>';
+}
+document.getElementById('totals-grid').innerHTML=th;
+
+// Alliance totals
+document.getElementById('alliance-totals').innerHTML=
+  '<div class="at-box at-box-blue"><div class="at-label">Blue Alliance</div><div class="at-val" id="blue-alliance-score">0</div></div>'+
+  '<div class="at-box at-box-red"><div class="at-label">Red Alliance</div><div class="at-val" id="red-alliance-score">0</div></div>';
+
+function sr(id,ph,r){
+  data[id].range[ph]=r;
+  document.getElementById(id+'-'+ph+'-nb').className='tog-btn'+(r==='near'?' a-near':'');
+  document.getElementById(id+'-'+ph+'-fb').className='tog-btn'+(r==='far'?' a-far':'');
+}
+
+function as(id,ph,pts){
+  var d=data[id][ph],r=data[id].range[ph];
+  d[r].shoots++;d[r].balls+=pts;
+  d.history.push({r:r,p:pts});
+  ui(id);
+  if(navigator.vibrate)navigator.vibrate(30);
+}
+
+function us(id,ph){
+  var d=data[id][ph];
+  if(!d.history.length)return;
+  var last=d.history.pop();
+  d[last.r].shoots--;d[last.r].balls-=last.p;
+  ui(id);
+}
+
+function ui(id){
+  for(var p=0;p<2;p++){
+    var ph=['auto','teleop'][p],d=data[id][ph];
+    var ts=d.near.shoots+d.far.shoots,tb=d.near.balls+d.far.balls;
+    document.getElementById(id+'-'+ph+'-stats').textContent=ts+' shots / '+tb+' balls';
+    document.getElementById(id+'-'+ph+'-ns').textContent='N:'+d.near.shoots+'/'+d.near.balls;
+    document.getElementById(id+'-'+ph+'-fs').textContent='F:'+d.far.shoots+'/'+d.far.balls;
+  }
+  var a=data[id].auto,t=data[id].teleop;
+  var totalBalls=a.near.balls+a.far.balls+t.near.balls+t.far.balls;
+  document.getElementById(id+'-ts').textContent=a.near.shoots+a.far.shoots+t.near.shoots+t.far.shoots;
+  document.getElementById(id+'-tb').textContent=totalBalls;
+  document.getElementById(id+'-sc').textContent=totalBalls*3;
+  // Update alliance totals
+  updateAllianceTotals();
+}
+
+function updateAllianceTotals(){
+  var blueScore=0,redScore=0;
+  var ids=['blue1','blue2'];
+  for(var i=0;i<ids.length;i++){
+    var a=data[ids[i]].auto,t=data[ids[i]].teleop;
+    blueScore+=(a.near.balls+a.far.balls+t.near.balls+t.far.balls)*3;
+  }
+  ids=['red1','red2'];
+  for(var i=0;i<ids.length;i++){
+    var a=data[ids[i]].auto,t=data[ids[i]].teleop;
+    redScore+=(a.near.balls+a.far.balls+t.near.balls+t.far.balls)*3;
+  }
+  document.getElementById('blue-alliance-score').textContent=blueScore;
+  document.getElementById('red-alliance-score').textContent=redScore;
+}
+
+function showToast(msg,err){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show'+(err?' error':'');
+  setTimeout(function(){el.className='toast'},2500);
+}
+
+function submitData(){
+  var match=document.getElementById('matchNumber').value.trim();
+  var scouter=document.getElementById('scouterName').value.trim();
+  var ts=new Date().toISOString();
+  var rows=[];
+  for(var i=0;i<SLOTS.length;i++){
+    var slot=SLOTS[i],sel=document.getElementById(slot.id+'-name');
+    if(sel.selectedIndex===0)continue;
+    var team=sel.options[sel.selectedIndex].text;
+    var a=data[slot.id].auto,t=data[slot.id].teleop;
+    var totalBalls=a.near.balls+a.far.balls+t.near.balls+t.far.balls;
+    var teamScore=totalBalls*3;
+    rows.push({
+      timestamp:ts,match:match,scouter:scouter,
+      alliance:slot.alliance.toUpperCase(),position:slot.pos,team:team,
+      auto_near_shoots:a.near.shoots,auto_near_balls:a.near.balls,
+      auto_far_shoots:a.far.shoots,auto_far_balls:a.far.balls,
+      auto_total_shoots:a.near.shoots+a.far.shoots,auto_total_balls:a.near.balls+a.far.balls,
+      auto_lever:a.lever?'Yes':'No',
+      teleop_near_shoots:t.near.shoots,teleop_near_balls:t.near.balls,
+      teleop_far_shoots:t.far.shoots,teleop_far_balls:t.far.balls,
+      teleop_total_shoots:t.near.shoots+t.far.shoots,teleop_total_balls:t.near.balls+t.far.balls,
+      total_shoots:a.near.shoots+a.far.shoots+t.near.shoots+t.far.shoots,
+      total_balls:totalBalls,
+      team_score:teamScore
+    });
+  }
+  if(!rows.length){showToast('No teams selected!',true);return}
+  // Compute alliance scores and add to each row
+  var allianceScores={RED:0,BLUE:0};
+  for(var i=0;i<rows.length;i++) allianceScores[rows[i].alliance]+=rows[i].team_score;
+  for(var i=0;i<rows.length;i++) rows[i].alliance_score=allianceScores[rows[i].alliance];
+  var btn=document.querySelector('.sub-btn');
+  btn.disabled=true;btn.textContent='SENDING...';
+  google.script.run
+    .withSuccessHandler(function(r){showToast('Submitted! '+r);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
+    .withFailureHandler(function(e){showToast('Error: '+e.message,true);btn.disabled=false;btn.textContent='SUBMIT TO SHEET'})
+    .submitRows(JSON.stringify(rows));
+}
+
+function resetAll(){
+  if(!confirm('Reset all data?'))return;
+  for(var i=0;i<SLOTS.length;i++){
+    var s=SLOTS[i],id=s.id;
+    data[id].auto={near:{shoots:0,balls:0},far:{shoots:0,balls:0},history:[],lever:false};
+    data[id].teleop={near:{shoots:0,balls:0},far:{shoots:0,balls:0},history:[]};
+    data[id].range={auto:s.defRange,teleop:s.defRange};
+    document.getElementById(id+'-name').selectedIndex=0;
+    document.getElementById(id+'-lever').checked=false;
+    sr(id,'auto',s.defRange);sr(id,'teleop',s.defRange);
+    ui(id);sync(id);
+  }
+  document.getElementById('matchNumber').value='';
+}
+</script>
+</body>
+</html>

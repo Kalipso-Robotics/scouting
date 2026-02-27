@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kalipso Stats Dashboard</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#1a1a2e;color:#fff;min-height:100vh;padding:12px;
+  }
+  h1{text-align:center;font-size:1.2rem;padding:8px 0;letter-spacing:1px;color:#eee}
+  h2{font-size:1rem;margin:16px 0 8px;color:#ccc;letter-spacing:0.5px}
+  .nav{text-align:center;margin-bottom:10px}
+  .nav a{color:#00cec9;font-size:0.85rem;text-decoration:none}
+  .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5);font-size:0.9rem}
+
+  /* Stats table */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
+  table{border-collapse:collapse;width:100%;min-width:900px;font-size:0.7rem}
+  th,td{padding:5px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
+  th{
+    background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
+    letter-spacing:0.3px;cursor:pointer;white-space:nowrap;position:sticky;top:0;
+    user-select:none;font-size:0.6rem;
+  }
+  th:hover{background:rgba(0,0,0,0.6)}
+  th.sort-asc::after{content:' ▲';font-size:0.5rem}
+  th.sort-desc::after{content:' ▼';font-size:0.5rem}
+  td{font-variant-numeric:tabular-nums}
+  tr:hover{background:rgba(255,255,255,0.05)}
+  td.team-cell{text-align:left;font-weight:600;white-space:nowrap;font-size:0.7rem}
+  .matches-col{color:rgba(255,255,255,0.4);font-size:0.6rem}
+
+  /* Heatmap colors */
+  .heat-green{color:#2ecc71}
+  .heat-yellow{color:#f1c40f}
+  .heat-red{color:#e74c3c}
+  .heat-dim{color:rgba(255,255,255,0.2)}
+
+  /* Recommendation cards */
+  .rec-section{margin-bottom:20px}
+  .rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .rec-card{background:rgba(255,255,255,0.06);border-radius:10px;padding:12px}
+  .rec-card h3{font-size:0.85rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  .rec-near h3{color:#e67e22}
+  .rec-far h3{color:#3498db}
+  .rec-list{list-style:none}
+  .rec-list li{
+    padding:6px 8px;margin-bottom:4px;border-radius:6px;
+    background:rgba(255,255,255,0.04);font-size:0.75rem;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .rec-rank{
+    font-weight:700;font-size:0.9rem;margin-right:8px;
+    width:20px;text-align:center;flex-shrink:0;
+  }
+  .rec-name{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rec-detail{font-size:0.6rem;color:rgba(255,255,255,0.5);text-align:right;white-space:nowrap;margin-left:6px}
+  .rec-badge{
+    display:inline-block;padding:1px 5px;border-radius:3px;font-size:0.55rem;
+    font-weight:700;margin-left:4px;
+  }
+  .badge-gold{background:rgba(241,196,15,0.25);color:#f1c40f}
+  .badge-silver{background:rgba(189,195,199,0.25);color:#bdc3c7}
+  .badge-bronze{background:rgba(205,127,50,0.25);color:#cd7f32}
+
+  .refresh-btn{
+    display:block;margin:12px auto;padding:10px 24px;border:none;border-radius:8px;
+    background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;
+    font-size:0.9rem;font-weight:600;cursor:pointer;
+  }
+  .refresh-btn:active{transform:scale(0.97)}
+
+  .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+</style>
+</head>
+<body>
+
+<h1>KALIPSO STATS DASHBOARD</h1>
+<div class="nav"><a href="?page=index">← Back to Scouting</a></div>
+
+<div id="content"><div class="loading">Loading data from sheet...</div></div>
+
+<button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+
+<script>
+function loadData(){
+  document.getElementById('content').innerHTML='<div class="loading">Loading...</div>';
+  google.script.run.withSuccessHandler(onData).withFailureHandler(onErr).getData();
+}
+function onErr(e){document.getElementById('content').innerHTML='<div class="loading">Error: '+e.message+'</div>';}
+
+function onData(json){
+  var raw=JSON.parse(json);
+  if(!raw.length){document.getElementById('content').innerHTML='<div class="loading">No data yet. Go scout some matches!</div>';return;}
+
+  // Group by team
+  var teams={};
+  for(var i=0;i<raw.length;i++){
+    var r=raw[i];
+    if(!r.team)continue;
+    if(!teams[r.team])teams[r.team]={matches:[]};
+    teams[r.team].matches.push(r);
+  }
+
+  // Compute stats per team
+  var stats=[];
+  for(var name in teams){
+    var ms=teams[name].matches;
+    var s=computeStats(name,ms);
+    stats.push(s);
+  }
+
+  renderTable(stats);
+  renderRecommendations(stats);
+}
+
+function computeStats(name,ms){
+  // Collect per-match values, ignoring zeros for averages
+  var autoNearBalls=[],autoNearShoots=0,autoNearBallsTotal=0;
+  var autoFarBalls=[],autoFarShoots=0,autoFarBallsTotal=0;
+  var telNearBalls=[],telNearShoots=0,telNearBallsTotal=0;
+  var telFarBalls=[],telFarShoots=0,telFarBallsTotal=0;
+  var nearScores=[],farScores=[];
+  var allScores=[];
+  var leverHits=0,leverMatches=0;
+
+  for(var i=0;i<ms.length;i++){
+    var m=ms[i];
+    // Auto near
+    if(m.auto_near_balls>0){autoNearBalls.push(m.auto_near_balls);}
+    autoNearShoots+=m.auto_near_shoots;autoNearBallsTotal+=m.auto_near_balls;
+    // Auto far
+    if(m.auto_far_balls>0){autoFarBalls.push(m.auto_far_balls);}
+    autoFarShoots+=m.auto_far_shoots;autoFarBallsTotal+=m.auto_far_balls;
+    // Teleop near
+    if(m.teleop_near_balls>0){telNearBalls.push(m.teleop_near_balls);}
+    telNearShoots+=m.teleop_near_shoots;telNearBallsTotal+=m.teleop_near_balls;
+    // Teleop far
+    if(m.teleop_far_balls>0){telFarBalls.push(m.teleop_far_balls);}
+    telFarShoots+=m.teleop_far_shoots;telFarBallsTotal+=m.teleop_far_balls;
+
+    // Near total score (auto_near + teleop_near) * 3
+    var nearS=(m.auto_near_balls+m.teleop_near_balls)*3;
+    if(nearS>0)nearScores.push(nearS);
+    // Far total score
+    var farS=(m.auto_far_balls+m.teleop_far_balls)*3;
+    if(farS>0)farScores.push(farS);
+
+    allScores.push(m.team_score);
+    if(m.auto_lever==='Yes')leverHits++;
+    leverMatches++;
+  }
+
+  return {
+    team:name,
+    matchCount:ms.length,
+    autoAvgNear:avg(autoNearBalls),
+    autoAccNear:acc(autoNearBallsTotal,autoNearShoots),
+    autoAvgFar:avg(autoFarBalls),
+    autoAccFar:acc(autoFarBallsTotal,autoFarShoots),
+    telAvgNear:avg(telNearBalls),
+    telAccNear:acc(telNearBallsTotal,telNearShoots),
+    telAvgFar:avg(telFarBalls),
+    telAccFar:acc(telFarBallsTotal,telFarShoots),
+    avgScoreNear:avg(nearScores),
+    avgScoreFar:avg(farScores),
+    maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
+    // For ranking
+    nearScores:nearScores,
+    farScores:farScores,
+    nearTotalShoots:autoNearShoots+telNearShoots,
+    farTotalShoots:autoFarShoots+telFarShoots,
+    nearAccOverall:acc(autoNearBallsTotal+telNearBallsTotal,autoNearShoots+telNearShoots),
+    farAccOverall:acc(autoFarBallsTotal+telFarBallsTotal,autoFarShoots+telFarShoots),
+    leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
+  };
+}
+
+function avg(arr){
+  if(!arr.length)return 0;
+  var s=0;for(var i=0;i<arr.length;i++)s+=arr[i];
+  return s/arr.length;
+}
+function acc(balls,shoots){
+  if(!shoots)return 0;
+  return Math.min(balls/(shoots*3),1);
+}
+function stdev(arr){
+  if(arr.length<2)return 0;
+  var m=avg(arr),s=0;
+  for(var i=0;i<arr.length;i++)s+=(arr[i]-m)*(arr[i]-m);
+  return Math.sqrt(s/arr.length);
+}
+function cv(arr){
+  var a=avg(arr);
+  if(!a)return 999;
+  return stdev(arr)/a;
+}
+
+// Render table
+var currentSort={col:'',dir:''};
+var currentStats=[];
+
+function renderTable(stats){
+  currentStats=stats;
+  var cols=[
+    {k:'team',l:'Team',fmt:'str'},
+    {k:'matchCount',l:'#',fmt:'int'},
+    {k:'autoAvgNear',l:'Auto Avg Near',fmt:'f1'},
+    {k:'autoAccNear',l:'Auto Acc Near',fmt:'pct'},
+    {k:'autoAvgFar',l:'Auto Avg Far',fmt:'f1'},
+    {k:'autoAccFar',l:'Auto Acc Far',fmt:'pct'},
+    {k:'telAvgNear',l:'Tel Avg Near',fmt:'f1'},
+    {k:'telAccNear',l:'Tel Acc Near',fmt:'pct'},
+    {k:'telAvgFar',l:'Tel Avg Far',fmt:'f1'},
+    {k:'telAccFar',l:'Tel Acc Far',fmt:'pct'},
+    {k:'avgScoreNear',l:'Avg Score Near',fmt:'f0'},
+    {k:'avgScoreFar',l:'Avg Score Far',fmt:'f0'},
+    {k:'maxScore',l:'Max Score',fmt:'int'},
+    {k:'leverRate',l:'Lever %',fmt:'pct2'}
+  ];
+
+  var h='<div class="tbl-wrap"><table><thead><tr>';
+  for(var c=0;c<cols.length;c++){
+    var cls='';
+    if(currentSort.col===cols[c].k)cls=currentSort.dir==='asc'?' class="sort-asc"':' class="sort-desc"';
+    h+='<th'+cls+' onclick="sortTable(\''+cols[c].k+'\')">'+cols[c].l+'</th>';
+  }
+  h+='</tr></thead><tbody>';
+
+  for(var i=0;i<stats.length;i++){
+    var s=stats[i];
+    h+='<tr>';
+    for(var c=0;c<cols.length;c++){
+      var v=s[cols[c].k];
+      var f=cols[c].fmt;
+      if(f==='str'){
+        h+='<td class="team-cell">'+v+'</td>';
+      } else if(f==='int'){
+        h+='<td>'+v+'</td>';
+      } else if(f==='f1'){
+        h+='<td class="'+heatClass(v,0,6)+'">'+v.toFixed(1)+'</td>';
+      } else if(f==='f0'){
+        h+='<td class="'+heatClass(v,0,60)+'">'+Math.round(v)+'</td>';
+      } else if(f==='pct'){
+        h+='<td class="'+heatClassPct(v)+'">'+Math.round(v*100)+'%</td>';
+      } else if(f==='pct2'){
+        h+='<td>'+v+'%</td>';
+      }
+    }
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  h+='<div class="note">Averages exclude matches with 0 (team not playing that position). Accuracy = balls / (shoots × 3). Tap column headers to sort.</div>';
+
+  document.getElementById('content').innerHTML=h;
+}
+
+function heatClass(v,lo,hi){
+  if(v===0)return 'heat-dim';
+  var pct=(v-lo)/(hi-lo);
+  if(pct>=0.66)return 'heat-green';
+  if(pct>=0.33)return 'heat-yellow';
+  return 'heat-red';
+}
+function heatClassPct(v){
+  if(v===0)return 'heat-dim';
+  if(v>=0.66)return 'heat-green';
+  if(v>=0.33)return 'heat-yellow';
+  return 'heat-red';
+}
+
+function sortTable(col){
+  if(currentSort.col===col){
+    currentSort.dir=currentSort.dir==='desc'?'asc':'desc';
+  } else {
+    currentSort.col=col;
+    currentSort.dir=col==='team'?'asc':'desc';
+  }
+  currentStats.sort(function(a,b){
+    var va=a[col],vb=b[col];
+    if(typeof va==='string')va=va.toLowerCase();
+    if(typeof vb==='string')vb=vb.toLowerCase();
+    if(va<vb)return currentSort.dir==='asc'?-1:1;
+    if(va>vb)return currentSort.dir==='asc'?1:-1;
+    return 0;
+  });
+  renderTable(currentStats);
+  renderRecommendations(currentStats);
+}
+
+// Recommendation engine
+function renderRecommendations(stats){
+  // Filter teams with enough data
+  var nearCandidates=[];
+  var farCandidates=[];
+
+  for(var i=0;i<stats.length;i++){
+    var s=stats[i];
+    // Need at least 1 match with near data
+    if(s.nearScores.length>=1 && s.nearTotalShoots>=1){
+      nearCandidates.push(computeRank(s,'near'));
+    }
+    if(s.farScores.length>=1 && s.farTotalShoots>=1){
+      farCandidates.push(computeRank(s,'far'));
+    }
+  }
+
+  nearCandidates.sort(function(a,b){return b.composite-a.composite});
+  farCandidates.sort(function(a,b){return b.composite-a.composite});
+
+  var h='<div class="rec-section"><h2>Recommendations</h2>';
+  h+='<div class="note">Composite ranking: 30% accuracy + 25% avg score + 25% consistency + 20% volume. Consistency = low variation across matches.</div>';
+  h+='<div class="rec-grid">';
+  h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near');
+  h+=renderRecCard(farCandidates,'Best Far Teams','rec-far');
+  h+='</div></div>';
+
+  // Append after table
+  var existing=document.getElementById('rec-container');
+  if(existing)existing.remove();
+  var div=document.createElement('div');
+  div.id='rec-container';
+  div.innerHTML=h;
+  document.getElementById('content').appendChild(div);
+}
+
+function computeRank(s,type){
+  var scores=type==='near'?s.nearScores:s.farScores;
+  var totalShoots=type==='near'?s.nearTotalShoots:s.farTotalShoots;
+  var accOverall=type==='near'?s.nearAccOverall:s.farAccOverall;
+  var avgScore=type==='near'?s.avgScoreNear:s.avgScoreFar;
+
+  // Consistency: 1 - coefficient of variation (capped 0-1)
+  var consistency=Math.max(0,1-cv(scores));
+
+  // Normalize values for composite
+  // Accuracy: already 0-1
+  var accNorm=accOverall;
+  // Avg score: normalize to 0-1 (assume max reasonable ~90)
+  var scoreNorm=Math.min(avgScore/90,1);
+  // Volume: normalize shoots (assume max ~30 per team across matches)
+  var volNorm=Math.min(totalShoots/30,1);
+
+  var composite=accNorm*0.30+scoreNorm*0.25+consistency*0.25+volNorm*0.20;
+
+  return {
+    team:s.team,
+    composite:composite,
+    avgScore:Math.round(avgScore),
+    accuracy:Math.round(accOverall*100),
+    consistency:Math.round(consistency*100),
+    totalShoots:totalShoots,
+    matchCount:scores.length
+  };
+}
+
+function renderRecCard(candidates,title,cls){
+  var h='<div class="rec-card '+cls+'"><h3>'+title+'</h3><ol class="rec-list">';
+  var max=Math.min(candidates.length,10);
+  for(var i=0;i<max;i++){
+    var c=candidates[i];
+    var badge='';
+    if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
+    else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
+    else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
+    h+='<li>';
+    h+='<span class="rec-rank">'+(i+1)+'</span>';
+    h+='<span class="rec-name">'+c.team+badge+'</span>';
+    h+='<span class="rec-detail">'+c.avgScore+'pts '+c.accuracy+'%acc '+c.consistency+'%con '+c.totalShoots+'sh / '+c.matchCount+'m</span>';
+    h+='</li>';
+  }
+  if(!max)h+='<li style="opacity:0.4">No data yet</li>';
+  h+='</ol></div>';
+  return h;
+}
+
+// Load on start
+loadData();
+</script>
+</body>
+</html>
