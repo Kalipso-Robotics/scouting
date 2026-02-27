@@ -289,12 +289,13 @@ function renderRecommendations(stats){
     }
   }
   nearCandidates.sort(function(a,b){
-    if(b.leverRate!==a.leverRate)return b.leverRate-a.leverRate;
+    if(b.maxScore!==a.maxScore)return b.maxScore-a.maxScore;
     if(b.autoAvgNear!==a.autoAvgNear)return b.autoAvgNear-a.autoAvgNear;
-    return b.telAvgNear-a.telAvgNear;
+    if(b.telAvgNear!==a.telAvgNear)return b.telAvgNear-a.telAvgNear;
+    return b.leverRate-a.leverRate;
   });
 
-  // Best Far: sorted by avg far auto desc, then avg far teleop desc
+  // Best Far: sorted by max score, avg far auto, avg far teleop
   var farCandidates=[];
   for(var i=0;i<stats.length;i++){
     var s=stats[i];
@@ -303,12 +304,13 @@ function renderRecommendations(stats){
     }
   }
   farCandidates.sort(function(a,b){
+    if(b.maxScore!==a.maxScore)return b.maxScore-a.maxScore;
     if(b.autoAvgFar!==a.autoAvgFar)return b.autoAvgFar-a.autoAvgFar;
     return b.telAvgFar-a.telAvgFar;
   });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Best Near: lever rate, then avg near auto, then avg near teleop. Best Far: avg far auto, then avg far teleop.</div>';
+  h+='<div class="note">Ranked by: max score, then avg auto, then avg teleop (near also considers lever hit).</div>';
   h+='<div class="rec-grid">';
   h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
   h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
