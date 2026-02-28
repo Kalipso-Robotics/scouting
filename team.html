@@ -15,10 +15,17 @@
   .nav a{color:#00cec9;font-size:0.85rem;text-decoration:none}
   .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5);font-size:0.9rem}
 
-  .summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:16px}
-  .stat-card{background:rgba(255,255,255,0.06);border-radius:8px;padding:10px;text-align:center}
-  .stat-val{font-size:1.2rem;font-weight:700;color:#2ecc71}
-  .stat-lbl{font-size:0.55rem;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-top:2px}
+  .summary{margin-bottom:16px}
+  .sum-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+  .sum-block{background:rgba(255,255,255,0.06);border-radius:8px;padding:8px}
+  .sum-title{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;text-align:center;margin-bottom:6px;color:#ccc}
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .sum-grid.single{grid-template-columns:1fr}
+  .stat-card{text-align:center;padding:4px}
+  .stat-val{font-size:1.1rem;font-weight:700;color:#2ecc71}
+  .stat-lbl{font-size:0.5rem;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-top:1px}
+  .stat-near .stat-val{color:#e67e22}
+  .stat-far .stat-val{color:#3498db}
 
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
   table{border-collapse:collapse;width:100%;min-width:480px;font-size:0.65rem}
@@ -145,18 +152,36 @@ function renderTeamDetail(matches){
     }
   }
 
-  var h='';
-  h+='<div class="summary">';
-  h+=statCard(matches.length,'Matches');
-  h+=statCard(Math.round(avg(autoNearBalls)),'Auto Near Avg');
-  h+=statCard(Math.round(avg(autoFarBalls)),'Auto Far Avg');
-  h+=statCard(Math.round(avg(telNearBalls)),'Tel Near Avg');
-  h+=statCard(Math.round(avg(telFarBalls)),'Tel Far Avg');
-  h+=statCard(Math.round(avg(nearBalls)),'Total Near Avg');
-  h+=statCard(Math.round(avg(farBalls)),'Total Far Avg');
-  h+=statCard(Math.max.apply(null,allBalls.length?allBalls:[0]),'Max Balls');
-  h+=statCard((leverMatches?Math.round(leverHits/leverMatches*100):0)+'%','Lever Rate');
-  h+='</div>';
+  var leverPct=(leverMatches?Math.round(leverHits/leverMatches*100):0)+'%';
+  var maxBalls=Math.max.apply(null,allBalls.length?allBalls:[0]);
+
+  var h='<div class="summary">';
+  h+='<div class="sum-row">';
+  // Auto
+  h+='<div class="sum-block"><div class="sum-title">Auto</div><div class="sum-grid">';
+  h+=statCard(Math.round(avg(autoNearBalls)),'Near Avg','stat-near');
+  h+=statCard(Math.round(avg(autoFarBalls)),'Far Avg','stat-far');
+  h+=statCard(Math.max.apply(null,autoNearBalls.length?autoNearBalls:[0]),'Near Max','stat-near');
+  h+=statCard(Math.max.apply(null,autoFarBalls.length?autoFarBalls:[0]),'Far Max','stat-far');
+  h+=statCard(leverPct,'Lever','');
+  h+='</div></div>';
+  // Teleop
+  h+='<div class="sum-block"><div class="sum-title">Teleop</div><div class="sum-grid">';
+  h+=statCard(Math.round(avg(telNearBalls)),'Near Avg','stat-near');
+  h+=statCard(Math.round(avg(telFarBalls)),'Far Avg','stat-far');
+  h+=statCard(Math.max.apply(null,telNearBalls.length?telNearBalls:[0]),'Near Max','stat-near');
+  h+=statCard(Math.max.apply(null,telFarBalls.length?telFarBalls:[0]),'Far Max','stat-far');
+  h+='</div></div>';
+  // Total
+  h+='<div class="sum-block"><div class="sum-title">Total</div><div class="sum-grid">';
+  h+=statCard(Math.round(avg(nearBalls)),'Near Avg','stat-near');
+  h+=statCard(Math.round(avg(farBalls)),'Far Avg','stat-far');
+  h+=statCard(Math.max.apply(null,nearBalls.length?nearBalls:[0]),'Near Max','stat-near');
+  h+=statCard(Math.max.apply(null,farBalls.length?farBalls:[0]),'Far Max','stat-far');
+  h+=statCard(matches.length,'Matches','');
+  h+=statCard(maxBalls,'Max Balls','');
+  h+='</div></div>';
+  h+='</div></div>';
 
   currentMatches=matches;
   document.getElementById('content').innerHTML=h;
@@ -234,8 +259,8 @@ function sortCol(col){
   renderMatchTable();
 }
 
-function statCard(val,lbl){
-  return '<div class="stat-card"><div class="stat-val">'+val+'</div><div class="stat-lbl">'+lbl+'</div></div>';
+function statCard(val,lbl,cls){
+  return '<div class="stat-card'+(cls?' '+cls:'')+'"><div class="stat-val">'+val+'</div><div class="stat-lbl">'+lbl+'</div></div>';
 }
 
 loadData();
