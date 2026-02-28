@@ -54,7 +54,8 @@ function getData() {
       total_shoots: Number(v[19]) || 0,
       total_balls: Number(v[20]) || 0,
       team_score: Number(v[21]) || 0,
-      alliance_score: Number(v[22]) || 0
+      alliance_score: Number(v[22]) || 0,
+      comment: v[23] || ''
     });
   }
   return JSON.stringify(rows);

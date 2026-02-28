@@ -98,7 +98,7 @@
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.5</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.6</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
 <div class="nav"><a href="index.html">← Back to Scouting</a></div>
 
@@ -152,9 +152,11 @@ function computeStats(name,ms){
   var nearScores=[],farScores=[];
   var allScores=[];
   var leverHits=0,leverMatches=0;
+  var comments=[];
 
   for(var i=0;i<ms.length;i++){
     var m=ms[i];
+    if(m.comment)comments.push(m.comment);
     // Auto near
     if(m.auto_near_balls>0){autoNearBalls.push(m.auto_near_balls);}
     autoNearShoots+=m.auto_near_shoots;autoNearBallsTotal+=m.auto_near_balls;
@@ -204,7 +206,8 @@ function computeStats(name,ms){
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
     avgScoreFar:avg(farScores),
     maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
-    leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0
+    leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0,
+    comments:comments
   };
 }
 
@@ -458,7 +461,8 @@ function updateAlliancePicks(){
       if(!best||totalMax>best.totalMax){
         best={team:p.team,totalMax:totalMax,totalAvg:totalAvg,
           meAuto:cb.meAuto,meTel:cb.meTel,pAuto:cb.pAuto,pTel:cb.pTel,
-          meAutoMax:meAutoMax,meTelMax:meTelMax,pAutoMax:pAutoMax,pTelMax:pTelMax};
+          meAutoMax:meAutoMax,meTelMax:meTelMax,pAutoMax:pAutoMax,pTelMax:pTelMax,
+          comments:p.comments};
       }
     }
     picks.push(best);
@@ -484,7 +488,15 @@ function updateAlliancePicks(){
     h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+pk.meTelMax+')</span> ';
     h+='P('+pMax+'): <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+pk.pAutoMax+')</span> ';
     h+='<span class="alliance-pick-pos pos-'+(pk.pTel==='Near'?'near':'far')+'">T:'+pk.pTel+'('+pk.pTelMax+')</span>';
-    h+='</div></li>';
+    h+='</div>';
+    if(pk.comments&&pk.comments.length){
+      h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.4);padding:2px 0 0 28px;font-style:italic">';
+      for(var ci=0;ci<pk.comments.length;ci++){
+        h+=(ci?'; ':'')+pk.comments[ci];
+      }
+      h+='</div>';
+    }
+    h+='</li>';
   }
   if(!max)h+='<li style="opacity:0.4">No partner data</li>';
   h+='</ol>';
