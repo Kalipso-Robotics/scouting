@@ -26,7 +26,11 @@
   th{
     background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
     letter-spacing:0.3px;white-space:nowrap;position:sticky;top:0;font-size:0.6rem;
+    cursor:pointer;user-select:none;
   }
+  th:hover{background:rgba(0,0,0,0.6)}
+  th.sort-asc::after{content:' ▲';font-size:0.5rem}
+  th.sort-desc::after{content:' ▼';font-size:0.5rem}
   td{font-variant-numeric:tabular-nums}
   tr:hover{background:rgba(255,255,255,0.05)}
   .near-col{color:#e67e22}
@@ -116,33 +120,80 @@ function renderTeamDetail(matches){
   h+=statCard((leverMatches?Math.round(leverHits/leverMatches*100):0)+'%','Lever Rate');
   h+='</div>';
 
-  h+='<h2>Match History</h2>';
-  h+='<div class="tbl-wrap"><table><thead><tr>';
-  h+='<th>Match</th><th>Scouter</th>';
-  h+='<th>A.Near</th><th>A.Far</th>';
-  h+='<th>T.Near</th><th>T.Far</th>';
-  h+='<th>Total</th><th>Lever</th><th>Score</th><th>Comment</th>';
-  h+='</tr></thead><tbody>';
+  currentMatches=matches;
+  document.getElementById('content').innerHTML=h;
+  renderMatchTable();
+}
 
-  for(var i=0;i<matches.length;i++){
-    var m=matches[i];
+var currentMatches=[];
+var currentSort={col:'',dir:''};
+var COLS=[
+  {k:'match',l:'Match',type:'str'},
+  {k:'scouter',l:'Scouter',type:'str'},
+  {k:'auto_near_balls',l:'A.Near',type:'num',cls:'near-col'},
+  {k:'auto_far_balls',l:'A.Far',type:'num',cls:'far-col'},
+  {k:'teleop_near_balls',l:'T.Near',type:'num',cls:'near-col'},
+  {k:'teleop_far_balls',l:'T.Far',type:'num',cls:'far-col'},
+  {k:'total_balls',l:'Total',type:'num'},
+  {k:'auto_lever',l:'Lever',type:'str'},
+  {k:'team_score',l:'Score',type:'num'},
+  {k:'comment',l:'Comment',type:'str'}
+];
+
+function renderMatchTable(){
+  var h='<h2>Match History</h2>';
+  h+='<div class="tbl-wrap"><table><thead><tr>';
+  for(var i=0;i<COLS.length;i++){
+    var cls='';
+    if(currentSort.col===COLS[i].k)cls=currentSort.dir==='asc'?' class="sort-asc"':' class="sort-desc"';
+    h+='<th'+cls+' onclick="sortCol(\''+COLS[i].k+'\')">'+COLS[i].l+'</th>';
+  }
+  h+='</tr></thead><tbody>';
+  for(var i=0;i<currentMatches.length;i++){
+    var m=currentMatches[i];
     h+='<tr>';
-    h+='<td>'+(m.match||'-')+'</td>';
-    h+='<td>'+(m.scouter||'-')+'</td>';
-    h+='<td class="near-col">'+m.auto_near_balls+'</td>';
-    h+='<td class="far-col">'+m.auto_far_balls+'</td>';
-    h+='<td class="near-col">'+m.teleop_near_balls+'</td>';
-    h+='<td class="far-col">'+m.teleop_far_balls+'</td>';
-    h+='<td>'+m.total_balls+'</td>';
-    h+='<td class="'+(m.auto_lever==='Yes'?'lever-yes':'lever-no')+'">'+(m.auto_lever==='Yes'?'Y':'N')+'</td>';
-    h+='<td>'+m.team_score+'</td>';
-    h+='<td class="comment-cell">'+(m.comment||'-')+'</td>';
+    for(var c=0;c<COLS.length;c++){
+      var col=COLS[c],v=m[col.k];
+      if(col.k==='auto_lever'){
+        h+='<td class="'+(v==='Yes'?'lever-yes':'lever-no')+'">'+(v==='Yes'?'Y':'N')+'</td>';
+      } else if(col.k==='comment'){
+        h+='<td class="comment-cell">'+(v||'-')+'</td>';
+      } else if(col.k==='match'||col.k==='scouter'){
+        h+='<td>'+(v||'-')+'</td>';
+      } else {
+        h+='<td'+(col.cls?' class="'+col.cls+'"':'')+'>'+v+'</td>';
+      }
+    }
     h+='</tr>';
   }
   h+='</tbody></table></div>';
-  h+='<div class="note">Ball counts shown. Score = balls x 3.</div>';
+  h+='<div class="note">Ball counts shown. Score = balls x 3. Tap headers to sort.</div>';
+  var existing=document.getElementById('match-table-container');
+  if(existing)existing.remove();
+  var div=document.createElement('div');
+  div.id='match-table-container';
+  div.innerHTML=h;
+  document.getElementById('content').appendChild(div);
+}
 
-  document.getElementById('content').innerHTML=h;
+function sortCol(col){
+  if(currentSort.col===col){
+    currentSort.dir=currentSort.dir==='desc'?'asc':'desc';
+  } else {
+    currentSort.col=col;
+    var colDef=null;
+    for(var i=0;i<COLS.length;i++)if(COLS[i].k===col){colDef=COLS[i];break;}
+    currentSort.dir=(colDef&&colDef.type==='str')?'asc':'desc';
+  }
+  currentMatches.sort(function(a,b){
+    var va=a[col],vb=b[col];
+    if(typeof va==='string')va=(va||'').toLowerCase();
+    if(typeof vb==='string')vb=(vb||'').toLowerCase();
+    if(va<vb)return currentSort.dir==='asc'?-1:1;
+    if(va>vb)return currentSort.dir==='asc'?1:-1;
+    return 0;
+  });
+  renderMatchTable();
 }
 
 function statCard(val,lbl){
