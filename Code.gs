@@ -55,7 +55,8 @@ function getData() {
       total_balls: Number(v[20]) || 0,
       team_score: Number(v[21]) || 0,
       alliance_score: Number(v[22]) || 0,
-      comment: v[23] || ''
+      comment: v[23] || '',
+      session: v[24] || ''
     });
   }
   return JSON.stringify(rows);
@@ -73,11 +74,26 @@ function submitRows(rowsJson) {
       'Auto Total Shoots', 'Auto Total Balls', 'Auto Lever Hit',
       'Teleop Near Shoots', 'Teleop Near Balls', 'Teleop Far Shoots', 'Teleop Far Balls',
       'Teleop Total Shoots', 'Teleop Total Balls',
-      'Total Shoots', 'Total Balls', 'Team Score', 'Alliance Score', 'Comment'
+      'Total Shoots', 'Total Balls', 'Team Score', 'Alliance Score', 'Comment', 'Session'
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
+  }
+
+  // Remove existing rows with the same session ID (re-submit = update)
+  var sid = rows.length > 0 ? (rows[0].session || '') : '';
+  if (sid) {
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      var sessionCol = 25; // Column Y = Session
+      var sessions = sheet.getRange(2, sessionCol, lastRow - 1, 1).getValues();
+      for (var i = sessions.length - 1; i >= 0; i--) {
+        if (sessions[i][0] === sid) {
+          sheet.deleteRow(i + 2);
+        }
+      }
+    }
   }
 
   for (var i = 0; i < rows.length; i++) {
@@ -88,9 +104,10 @@ function submitRows(rowsJson) {
       r.auto_total_shoots, r.auto_total_balls, r.auto_lever,
       r.teleop_near_shoots, r.teleop_near_balls, r.teleop_far_shoots, r.teleop_far_balls,
       r.teleop_total_shoots, r.teleop_total_balls,
-      r.total_shoots, r.total_balls, r.team_score, r.alliance_score, r.comment || ''
+      r.total_shoots, r.total_balls, r.team_score, r.alliance_score, r.comment || '',
+      r.session || ''
     ]);
   }
 
-  return rows.length + ' rows added';
+  return rows.length + ' rows saved';
 }
