@@ -473,12 +473,12 @@ function updateAlliancePicks(){
     if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
     else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
-    h+='<li style="flex-wrap:wrap">';
-    h+='<span class="rec-rank">'+(i+1)+'</span>';
-    h+='<span class="rec-name">'+pk.team+badge+'</span>';
-    h+='<span class="rec-detail">Max:'+Math.round(pk.totalMax)+' Avg:'+Math.round(pk.totalAvg)+'</span>';
     var youMax=pk.meAutoMax+pk.meTelMax;
     var pMax=pk.pAutoMax+pk.pTelMax;
+    h+='<li style="flex-wrap:wrap">';
+    h+='<span class="rec-rank">'+(i+1)+'</span>';
+    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px">Max:'+Math.round(pk.totalMax)+' Avg:'+Math.round(pk.totalAvg)+'</span>';
+    h+='<span class="rec-name">'+pk.team+badge+'</span>';
     h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
     h+='You('+youMax+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
     h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+pk.meTelMax+')</span> ';
