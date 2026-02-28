@@ -337,6 +337,7 @@ for(var i=0;i<tOrder.length;i++){
   th+='<div class="t-lbl">Auto</div><div class="t-val" id="'+id+'-as">0</div>';
   th+='<div class="t-lbl">Teleop</div><div class="t-val" id="'+id+'-tls">0</div>';
   th+='<div class="t-score-lbl">Total</div><div class="t-score" id="'+id+'-sc">0</div>';
+  th+='<textarea id="'+id+'-comment" placeholder="Notes..." style="width:100%;margin-top:3px;padding:4px;border:none;border-radius:4px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.55rem;resize:vertical;min-height:28px;outline:none"></textarea>';
   th+='</div>';
 }
 document.getElementById('totals-grid').innerHTML=th;
@@ -420,6 +421,7 @@ function submitData(){
     var a=data[slot.id].auto,t=data[slot.id].teleop;
     var totalBalls=a.near.balls+a.far.balls+t.near.balls+t.far.balls;
     var teamScore=totalBalls*3;
+    var comment=document.getElementById(slot.id+'-comment').value.trim();
     rows.push({
       timestamp:ts,match:match,scouter:scouter,
       alliance:slot.alliance.toUpperCase(),position:slot.pos,team:team,
@@ -432,7 +434,8 @@ function submitData(){
       teleop_total_shoots:t.near.shoots+t.far.shoots,teleop_total_balls:t.near.balls+t.far.balls,
       total_shoots:a.near.shoots+a.far.shoots+t.near.shoots+t.far.shoots,
       total_balls:totalBalls,
-      team_score:teamScore
+      team_score:teamScore,
+      comment:comment
     });
   }
   if(!rows.length){showToast('No teams selected!',true);return}
@@ -466,6 +469,7 @@ function resetAll(){
     data[id].range={auto:s.defRange,teleop:s.defRange};
     document.getElementById(id+'-name').selectedIndex=0;
     document.getElementById(id+'-lever').checked=false;
+    document.getElementById(id+'-comment').value='';
     sr(id,'auto',s.defRange);sr(id,'teleop',s.defRange);
     ui(id);sync(id);
   }

@@ -72,7 +72,7 @@ function submitRows(rowsJson) {
       'Auto Total Shoots', 'Auto Total Balls', 'Auto Lever Hit',
       'Teleop Near Shoots', 'Teleop Near Balls', 'Teleop Far Shoots', 'Teleop Far Balls',
       'Teleop Total Shoots', 'Teleop Total Balls',
-      'Total Shoots', 'Total Balls', 'Team Score', 'Alliance Score'
+      'Total Shoots', 'Total Balls', 'Team Score', 'Alliance Score', 'Comment'
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
@@ -87,7 +87,7 @@ function submitRows(rowsJson) {
       r.auto_total_shoots, r.auto_total_balls, r.auto_lever,
       r.teleop_near_shoots, r.teleop_near_balls, r.teleop_far_shoots, r.teleop_far_balls,
       r.teleop_total_shoots, r.teleop_total_balls,
-      r.total_shoots, r.total_balls, r.team_score, r.alliance_score
+      r.total_shoots, r.total_balls, r.team_score, r.alliance_score, r.comment || ''
     ]);
   }
 
