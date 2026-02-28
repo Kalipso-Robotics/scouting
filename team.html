@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Team Detail - Kalipso Stats</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#1a1a2e;color:#fff;min-height:100vh;padding:12px;
+  }
+  h1{text-align:center;font-size:1.2rem;padding:8px 0;letter-spacing:1px;color:#eee}
+  h2{font-size:1rem;margin:16px 0 8px;color:#ccc;letter-spacing:0.5px}
+  .nav{text-align:center;margin-bottom:10px}
+  .nav a{color:#00cec9;font-size:0.85rem;text-decoration:none}
+  .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5);font-size:0.9rem}
+
+  .summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:16px}
+  .stat-card{background:rgba(255,255,255,0.06);border-radius:8px;padding:10px;text-align:center}
+  .stat-val{font-size:1.2rem;font-weight:700;color:#2ecc71}
+  .stat-lbl{font-size:0.55rem;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-top:2px}
+
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
+  table{border-collapse:collapse;width:100%;min-width:480px;font-size:0.65rem}
+  th,td{padding:5px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
+  th{
+    background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
+    letter-spacing:0.3px;white-space:nowrap;position:sticky;top:0;font-size:0.6rem;
+  }
+  td{font-variant-numeric:tabular-nums}
+  tr:hover{background:rgba(255,255,255,0.05)}
+  .near-col{color:#e67e22}
+  .far-col{color:#3498db}
+  .lever-yes{color:#2ecc71;font-weight:700}
+  .lever-no{color:rgba(255,255,255,0.2)}
+  .comment-cell{text-align:left;font-size:0.55rem;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+</style>
+</head>
+<body>
+
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.7</div>
+<h1 id="team-title">TEAM DETAIL</h1>
+<div class="nav"><a href="stats.html">&larr; Back to Stats Dashboard</a></div>
+<div id="content"><div class="loading">Loading data...</div></div>
+
+<script>
+var params=new URLSearchParams(window.location.search);
+var teamName=params.get('team')||'';
+if(teamName){
+  document.getElementById('team-title').textContent=teamName;
+  document.title=teamName+' - Kalipso Stats';
+}
+
+function loadData(){
+  document.getElementById('content').innerHTML='<div class="loading">Loading...</div>';
+  fetch('https://script.google.com/macros/s/AKfycbwDhVmXeI1Ic95zEL7I7Dggic8Bg5bS6bV8UQpcgFxzKzF2lc4V8gr_8hwVeTLPS-2x/exec')
+    .then(function(res){return res.text()})
+    .then(function(json){onData(json)})
+    .catch(function(e){
+      document.getElementById('content').innerHTML='<div class="loading">Error: '+(e.message||e)+'</div>';
+    });
+}
+
+function onData(json){
+  var raw=JSON.parse(json);
+  var matches=[];
+  for(var i=0;i<raw.length;i++){
+    if(raw[i].team===teamName)matches.push(raw[i]);
+  }
+  if(!matches.length){
+    document.getElementById('content').innerHTML='<div class="loading">No data found for "'+teamName+'"</div>';
+    return;
+  }
+  renderTeamDetail(matches);
+}
+
+function avg(arr){
+  if(!arr.length)return 0;
+  var s=0;for(var i=0;i<arr.length;i++)s+=arr[i];
+  return s/arr.length;
+}
+
+function renderTeamDetail(matches){
+  var autoNearBalls=[],autoFarBalls=[],telNearBalls=[],telFarBalls=[];
+  var nearBalls=[],farBalls=[],allBalls=[];
+  var leverHits=0,leverMatches=0;
+
+  for(var i=0;i<matches.length;i++){
+    var m=matches[i];
+    if(m.auto_near_balls>0)autoNearBalls.push(m.auto_near_balls);
+    if(m.auto_far_balls>0)autoFarBalls.push(m.auto_far_balls);
+    if(m.teleop_near_balls>0)telNearBalls.push(m.teleop_near_balls);
+    if(m.teleop_far_balls>0)telFarBalls.push(m.teleop_far_balls);
+    var nb=m.auto_near_balls+m.teleop_near_balls;
+    if(nb>0)nearBalls.push(nb);
+    var fb=m.auto_far_balls+m.teleop_far_balls;
+    if(fb>0)farBalls.push(fb);
+    allBalls.push(m.total_balls);
+    if(m.auto_near_shoots>0||m.auto_near_balls>0||m.auto_lever==='Yes'){
+      leverMatches++;
+      if(m.auto_lever==='Yes')leverHits++;
+    }
+  }
+
+  var h='';
+  h+='<div class="summary">';
+  h+=statCard(matches.length,'Matches');
+  h+=statCard(Math.round(avg(autoNearBalls)),'Auto Near Avg');
+  h+=statCard(Math.round(avg(autoFarBalls)),'Auto Far Avg');
+  h+=statCard(Math.round(avg(telNearBalls)),'Tel Near Avg');
+  h+=statCard(Math.round(avg(telFarBalls)),'Tel Far Avg');
+  h+=statCard(Math.round(avg(nearBalls)),'Total Near Avg');
+  h+=statCard(Math.round(avg(farBalls)),'Total Far Avg');
+  h+=statCard(Math.max.apply(null,allBalls.length?allBalls:[0]),'Max Balls');
+  h+=statCard((leverMatches?Math.round(leverHits/leverMatches*100):0)+'%','Lever Rate');
+  h+='</div>';
+
+  h+='<h2>Match History</h2>';
+  h+='<div class="tbl-wrap"><table><thead><tr>';
+  h+='<th>Match</th><th>Scouter</th>';
+  h+='<th>A.Near</th><th>A.Far</th>';
+  h+='<th>T.Near</th><th>T.Far</th>';
+  h+='<th>Total</th><th>Lever</th><th>Score</th><th>Comment</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var i=0;i<matches.length;i++){
+    var m=matches[i];
+    h+='<tr>';
+    h+='<td>'+(m.match||'-')+'</td>';
+    h+='<td>'+(m.scouter||'-')+'</td>';
+    h+='<td class="near-col">'+m.auto_near_balls+'</td>';
+    h+='<td class="far-col">'+m.auto_far_balls+'</td>';
+    h+='<td class="near-col">'+m.teleop_near_balls+'</td>';
+    h+='<td class="far-col">'+m.teleop_far_balls+'</td>';
+    h+='<td>'+m.total_balls+'</td>';
+    h+='<td class="'+(m.auto_lever==='Yes'?'lever-yes':'lever-no')+'">'+(m.auto_lever==='Yes'?'Y':'N')+'</td>';
+    h+='<td>'+m.team_score+'</td>';
+    h+='<td class="comment-cell">'+(m.comment||'-')+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  h+='<div class="note">Ball counts shown. Score = balls x 3.</div>';
+
+  document.getElementById('content').innerHTML=h;
+}
+
+function statCard(val,lbl){
+  return '<div class="stat-card"><div class="stat-val">'+val+'</div><div class="stat-lbl">'+lbl+'</div></div>';
+}
+
+loadData();
+</script>
+</body>
+</html>

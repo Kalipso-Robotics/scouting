@@ -30,6 +30,8 @@
   td{font-variant-numeric:tabular-nums}
   tr:hover{background:rgba(255,255,255,0.05)}
   td.team-cell{text-align:left;font-weight:600;white-space:nowrap;font-size:0.7rem}
+  td.team-cell a{color:#fff;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.3)}
+  td.team-cell a:hover{color:#00cec9;border-bottom-color:#00cec9}
   .matches-col{color:rgba(255,255,255,0.4);font-size:0.6rem}
 
   /* Heatmap colors */
@@ -98,7 +100,7 @@
 </head>
 <body>
 
-<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.6</div>
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.7</div>
 <h1>KALIPSO STATS DASHBOARD</h1>
 <div class="nav"><a href="index.html">← Back to Scouting</a></div>
 
@@ -170,37 +172,31 @@ function computeStats(name,ms){
     if(m.teleop_far_balls>0){telFarBalls.push(m.teleop_far_balls);}
     telFarShoots+=m.teleop_far_shoots;telFarBallsTotal+=m.teleop_far_balls;
 
-    // Near total score (auto_near + teleop_near) * 3
-    var nearS=(m.auto_near_balls+m.teleop_near_balls)*3;
-    if(nearS>0)nearScores.push(nearS);
-    // Far total score
-    var farS=(m.auto_far_balls+m.teleop_far_balls)*3;
-    if(farS>0)farScores.push(farS);
+    // Near total balls (auto_near + teleop_near)
+    var nearB=m.auto_near_balls+m.teleop_near_balls;
+    if(nearB>0)nearScores.push(nearB);
+    // Far total balls
+    var farB=m.auto_far_balls+m.teleop_far_balls;
+    if(farB>0)farScores.push(farB);
 
-    allScores.push(m.team_score);
+    allScores.push(m.total_balls);
     if(m.auto_near_shoots>0||m.auto_near_balls>0||m.auto_lever==='Yes'){
       leverMatches++;
       if(m.auto_lever==='Yes')leverHits++;
     }
   }
 
-  // Convert balls to scores (*3)
-  var autoNearScores=[];for(var j=0;j<autoNearBalls.length;j++)autoNearScores.push(autoNearBalls[j]*3);
-  var autoFarScores=[];for(var j=0;j<autoFarBalls.length;j++)autoFarScores.push(autoFarBalls[j]*3);
-  var telNearScores=[];for(var j=0;j<telNearBalls.length;j++)telNearScores.push(telNearBalls[j]*3);
-  var telFarScores=[];for(var j=0;j<telFarBalls.length;j++)telFarScores.push(telFarBalls[j]*3);
-
   return {
     team:name,
     matchCount:ms.length,
-    autoMaxNear:Math.max.apply(null,autoNearScores.length?autoNearScores:[0]),
-    autoAvgNear:avg(autoNearScores),
-    autoMaxFar:Math.max.apply(null,autoFarScores.length?autoFarScores:[0]),
-    autoAvgFar:avg(autoFarScores),
-    telMaxNear:Math.max.apply(null,telNearScores.length?telNearScores:[0]),
-    telAvgNear:avg(telNearScores),
-    telMaxFar:Math.max.apply(null,telFarScores.length?telFarScores:[0]),
-    telAvgFar:avg(telFarScores),
+    autoMaxNear:Math.max.apply(null,autoNearBalls.length?autoNearBalls:[0]),
+    autoAvgNear:avg(autoNearBalls),
+    autoMaxFar:Math.max.apply(null,autoFarBalls.length?autoFarBalls:[0]),
+    autoAvgFar:avg(autoFarBalls),
+    telMaxNear:Math.max.apply(null,telNearBalls.length?telNearBalls:[0]),
+    telAvgNear:avg(telNearBalls),
+    telMaxFar:Math.max.apply(null,telFarBalls.length?telFarBalls:[0]),
+    telAvgFar:avg(telFarBalls),
     maxScoreNear:Math.max.apply(null,nearScores.length?nearScores:[0]),
     avgScoreNear:avg(nearScores),
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
@@ -273,13 +269,13 @@ function renderTable(stats){
       var v=s[cols[c].k];
       var f=cols[c].fmt;
       if(f==='str'){
-        h+='<td class="team-cell">'+v+'</td>';
+        h+='<td class="team-cell"><a href="team.html?team='+encodeURIComponent(v)+'">'+v+'</a></td>';
       } else if(f==='int'){
         h+='<td>'+v+'</td>';
       } else if(f==='f1'){
         h+='<td class="'+heatClass(v,0,6)+'">'+v.toFixed(1)+'</td>';
       } else if(f==='f0'){
-        h+='<td class="'+heatClass(v,0,60)+'">'+Math.round(v)+'</td>';
+        h+='<td class="'+heatClass(v,0,20)+'">'+Math.round(v)+'</td>';
       } else if(f==='pct'){
         h+='<td class="'+heatClassPct(v)+'">'+Math.round(v*100)+'%</td>';
       } else if(f==='pct2'){
@@ -289,7 +285,7 @@ function renderTable(stats){
     h+='</tr>';
   }
   h+='</tbody></table></div>';
-  h+='<div class="note">All values are scores (balls × 3). Averages exclude 0 matches. Tap headers to sort.</div>';
+  h+='<div class="note">All values are ball counts. Averages exclude 0 matches. Tap headers to sort.</div>';
 
   document.getElementById('content').innerHTML=h;
 }
@@ -358,7 +354,7 @@ function renderRecommendations(stats){
   });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Ranked by: max score, avg score, lever hit (near only).</div>';
+  h+='<div class="note">Ranked by: max balls, avg balls, lever hit (near only).</div>';
   h+='<div class="rec-grid">';
   h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
   h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
@@ -389,7 +385,7 @@ function renderRecCard(candidates,title,cls,type){
     }
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
-    h+='<span class="rec-name">'+c.team+badge+'</span>';
+    h+='<span class="rec-name"><a href="team.html?team='+encodeURIComponent(c.team)+'" style="color:inherit;text-decoration:none">'+c.team+'</a>'+badge+'</span>';
     h+='<span class="rec-detail">'+detail+'</span>';
     h+='</li>';
   }
@@ -408,7 +404,7 @@ function renderAllianceSelection(stats){
   var div=document.createElement('div');
   div.id='alliance-container';
   var h='<div class="alliance-section"><h2>Alliance Selection</h2>';
-  h+='<div class="note">Finds best auto/teleop near/far combo per partner to maximize total score.</div>';
+  h+='<div class="note">Finds best auto/teleop near/far combo per partner to maximize avg balls.</div>';
   h+='<select class="alliance-select" id="alliance-team" onchange="updateAlliancePicks()">';
   h+='<option value="">-- Select Your Team --</option>';
   var sorted=stats.slice().sort(function(a,b){return a.team<b.team?-1:1});
@@ -458,10 +454,11 @@ function updateAlliancePicks(){
       var pTelAvg=cb.pTel==='Near'?p.telAvgNear:p.telAvgFar;
       var totalMax=meAutoMax+meTelMax+pAutoMax+pTelMax;
       var totalAvg=meAutoAvg+meTelAvg+pAutoAvg+pTelAvg;
-      if(!best||totalMax>best.totalMax){
+      if(!best||totalAvg>best.totalAvg){
         best={team:p.team,totalMax:totalMax,totalAvg:totalAvg,
           meAuto:cb.meAuto,meTel:cb.meTel,pAuto:cb.pAuto,pTel:cb.pTel,
           meAutoMax:meAutoMax,meTelMax:meTelMax,pAutoMax:pAutoMax,pTelMax:pTelMax,
+          meAutoAvg:meAutoAvg,meTelAvg:meTelAvg,pAutoAvg:pAutoAvg,pTelAvg:pTelAvg,
           comments:p.comments};
       }
     }
@@ -477,19 +474,19 @@ function updateAlliancePicks(){
     if(i===0)badge='<span class="rec-badge badge-gold">1st</span>';
     else if(i===1)badge='<span class="rec-badge badge-silver">2nd</span>';
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
-    var youMax=pk.meAutoMax+pk.meTelMax;
-    var pMax=pk.pAutoMax+pk.pTelMax;
+    var youAvg=Math.round(pk.meAutoAvg+pk.meTelAvg);
+    var pAvg=Math.round(pk.pAutoAvg+pk.pTelAvg);
     h+='<li style="flex-wrap:wrap">';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
-    var maxClr=pk.totalMax>=300?'#2ecc71':pk.totalMax>=200?'#e67e22':'#e74c3c';
-    var avgClr=pk.totalAvg>=300?'#2ecc71':pk.totalAvg>=200?'#e67e22':'#e74c3c';
-    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span> <span style="color:'+avgClr+'">Avg:'+Math.round(pk.totalAvg)+'</span></span>';
-    h+='<span class="rec-name">'+pk.team+badge+'</span>';
+    var avgClr=pk.totalAvg>=100?'#2ecc71':pk.totalAvg>=67?'#e67e22':'#e74c3c';
+    var maxClr=pk.totalMax>=100?'#2ecc71':pk.totalMax>=67?'#e67e22':'#e74c3c';
+    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+avgClr+'">Avg:'+Math.round(pk.totalAvg)+'</span> <span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span></span>';
+    h+='<span class="rec-name"><a href="team.html?team='+encodeURIComponent(pk.team)+'" style="color:inherit;text-decoration:none">'+pk.team+'</a>'+badge+'</span>';
     h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
-    h+='You('+youMax+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
-    h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+pk.meTelMax+')</span> ';
-    h+='P('+pMax+'): <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+pk.pAutoMax+')</span> ';
-    h+='<span class="alliance-pick-pos pos-'+(pk.pTel==='Near'?'near':'far')+'">T:'+pk.pTel+'('+pk.pTelMax+')</span>';
+    h+='You('+youAvg+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+Math.round(pk.meAutoAvg)+')</span> ';
+    h+='<span class="alliance-pick-pos pos-'+(pk.meTel==='Near'?'near':'far')+'">T:'+pk.meTel+'('+Math.round(pk.meTelAvg)+')</span> ';
+    h+='P('+pAvg+'): <span class="alliance-pick-pos pos-'+(pk.pAuto==='Near'?'near':'far')+'">A:'+pk.pAuto+'('+Math.round(pk.pAutoAvg)+')</span> ';
+    h+='<span class="alliance-pick-pos pos-'+(pk.pTel==='Near'?'near':'far')+'">T:'+pk.pTel+'('+Math.round(pk.pTelAvg)+')</span>';
     h+='</div>';
     if(pk.comments&&pk.comments.length){
       h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.4);padding:2px 0 0 28px;font-style:italic">';
