@@ -39,22 +39,30 @@
   .lever-no{color:rgba(255,255,255,0.2)}
   .comment-cell{text-align:left;font-size:0.55rem;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+  .team-select{
+    display:block;margin:8px auto;padding:8px 12px;border:none;border-radius:6px;
+    background:rgba(255,255,255,0.13);color:#fff;font-size:0.8rem;
+    outline:none;-webkit-appearance:none;appearance:none;min-width:220px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='white' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;padding-right:20px;
+  }
+  .team-select option{color:#000;background:#fff}
 </style>
 </head>
 <body>
 
 <div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.7</div>
-<h1 id="team-title">TEAM DETAIL</h1>
+<h1>TEAM DETAIL</h1>
 <div class="nav"><a href="stats.html">&larr; Back to Stats Dashboard</a></div>
+<select class="team-select" id="team-dropdown" onchange="onTeamChange()">
+  <option value="">-- Select Team --</option>
+</select>
 <div id="content"><div class="loading">Loading data...</div></div>
 
 <script>
 var params=new URLSearchParams(window.location.search);
 var teamName=params.get('team')||'';
-if(teamName){
-  document.getElementById('team-title').textContent=teamName;
-  document.title=teamName+' - Kalipso Stats';
-}
+var allRaw=[];
 
 function loadData(){
   document.getElementById('content').innerHTML='<div class="loading">Loading...</div>';
@@ -67,13 +75,43 @@ function loadData(){
 }
 
 function onData(json){
-  var raw=JSON.parse(json);
+  allRaw=JSON.parse(json);
+  // Build unique team list
+  var teamSet={};
+  for(var i=0;i<allRaw.length;i++){
+    if(allRaw[i].team)teamSet[allRaw[i].team]=1;
+  }
+  var teams=Object.keys(teamSet).sort();
+  var dd=document.getElementById('team-dropdown');
+  dd.innerHTML='<option value="">-- Select Team --</option>';
+  for(var i=0;i<teams.length;i++){
+    dd.innerHTML+='<option value="'+teams[i]+'"'+(teams[i]===teamName?' selected':'')+'>'+teams[i]+'</option>';
+  }
+  if(teamName)showTeam(teamName);
+  else document.getElementById('content').innerHTML='<div class="loading">Select a team above</div>';
+}
+
+function onTeamChange(){
+  var dd=document.getElementById('team-dropdown');
+  teamName=dd.value;
+  if(!teamName){
+    document.getElementById('content').innerHTML='<div class="loading">Select a team above</div>';
+    document.title='Team Detail - Kalipso Stats';
+    return;
+  }
+  // Update URL without reload
+  history.replaceState(null,'','team.html?team='+encodeURIComponent(teamName));
+  showTeam(teamName);
+}
+
+function showTeam(name){
+  document.title=name+' - Kalipso Stats';
   var matches=[];
-  for(var i=0;i<raw.length;i++){
-    if(raw[i].team===teamName)matches.push(raw[i]);
+  for(var i=0;i<allRaw.length;i++){
+    if(allRaw[i].team===name)matches.push(allRaw[i]);
   }
   if(!matches.length){
-    document.getElementById('content').innerHTML='<div class="loading">No data found for "'+teamName+'"</div>';
+    document.getElementById('content').innerHTML='<div class="loading">No data found for "'+name+'"</div>';
     return;
   }
   renderTeamDetail(matches);
