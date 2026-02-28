@@ -481,7 +481,8 @@ function updateAlliancePicks(){
     var pMax=pk.pAutoMax+pk.pTelMax;
     h+='<li style="flex-wrap:wrap">';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
-    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px">Max:'+Math.round(pk.totalMax)+' Avg:'+Math.round(pk.totalAvg)+'</span>';
+    var maxClr=pk.totalMax>=300?'#2ecc71':pk.totalMax>=200?'#e67e22':'#e74c3c';
+    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span> Avg:'+Math.round(pk.totalAvg)+'</span>';
     h+='<span class="rec-name">'+pk.team+badge+'</span>';
     h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
     h+='You('+youMax+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+pk.meAutoMax+')</span> ';
