@@ -478,7 +478,7 @@ function updateAlliancePicks(){
     var pAvg=Math.round(pk.pAutoAvg+pk.pTelAvg);
     h+='<li style="flex-wrap:wrap">';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
-    var avgClr=pk.totalAvg>=100?'#2ecc71':pk.totalAvg>=67?'#e67e22':'#e74c3c';
+    var avgClr=pk.totalAvg>=100?'#2ecc71':pk.totalAvg>=70?'#e67e22':'#e74c3c';
     var maxClr=pk.totalMax>=100?'#2ecc71':pk.totalMax>=67?'#e67e22':'#e74c3c';
     h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+avgClr+'">Avg:'+Math.round(pk.totalAvg)+'</span> <span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span></span>';
     h+='<span class="rec-name"><a href="team.html?team='+encodeURIComponent(pk.team)+'" style="color:inherit;text-decoration:none">'+pk.team+'</a>'+badge+'</span>';
