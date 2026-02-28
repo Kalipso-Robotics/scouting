@@ -96,6 +96,22 @@
   }
   .pos-near{background:rgba(230,126,34,0.25);color:#e67e22}
   .pos-far{background:rgba(52,152,219,0.25);color:#3498db}
+
+  .toggle-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0}
+  .toggle-lbl{font-size:0.7rem;color:rgba(255,255,255,0.5)}
+  .toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
+  .toggle input{display:none}
+  .toggle-sl{
+    position:absolute;inset:0;background:rgba(255,255,255,0.15);
+    border-radius:10px;transition:background 0.2s;
+  }
+  .toggle-sl::after{
+    content:'';position:absolute;top:2px;left:2px;
+    width:16px;height:16px;background:#fff;
+    border-radius:50%;transition:transform 0.2s;
+  }
+  .toggle input:checked+.toggle-sl{background:#e67e22}
+  .toggle input:checked+.toggle-sl::after{transform:translateX(16px)}
 </style>
 </head>
 <body>
@@ -107,6 +123,10 @@
 <div id="content"><div class="loading">Loading data from sheet...</div></div>
 
 <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+<div class="toggle-row">
+  <span class="toggle-lbl">Include test rows</span>
+  <label class="toggle"><input type="checkbox" id="include-test" onchange="processData()"><span class="toggle-sl"></span></label>
+</div>
 
 <script>
 function loadData(){
@@ -118,20 +138,25 @@ function loadData(){
 }
 function onErr(e){document.getElementById('content').innerHTML='<div class="loading">Error: '+(e.message||e)+'</div>';}
 
-function onData(json){
-  var raw=JSON.parse(json);
-  if(!raw.length){document.getElementById('content').innerHTML='<div class="loading">No data yet. Go scout some matches!</div>';return;}
+var allRawData=[];
 
-  // Group by team
+function onData(json){
+  allRawData=JSON.parse(json);
+  if(!allRawData.length){document.getElementById('content').innerHTML='<div class="loading">No data yet. Go scout some matches!</div>';return;}
+  processData();
+}
+
+function processData(){
+  var includeTest=document.getElementById('include-test').checked;
   var teams={};
-  for(var i=0;i<raw.length;i++){
-    var r=raw[i];
+  for(var i=0;i<allRawData.length;i++){
+    var r=allRawData[i];
     if(!r.team)continue;
+    if(!includeTest&&r.scouter&&(r.scouter+'').trim().toLowerCase().indexOf('test')>=0)continue;
     if(!teams[r.team])teams[r.team]={matches:[]};
     teams[r.team].matches.push(r);
   }
 
-  // Compute stats per team
   var stats=[];
   for(var name in teams){
     var ms=teams[name].matches;
