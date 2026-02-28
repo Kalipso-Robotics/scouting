@@ -335,9 +335,9 @@ for(var i=0;i<tOrder.length;i++){
   var id=tOrder[i];
   var slotIdx=IDS.indexOf(id);
   th+='<div class="t-box '+tCls2[i]+'"><div class="t-name cn-'+id+'-tot">'+(SLOTS[slotIdx].pos===1?'T1':'T2')+'</div>';
-  th+='<div class="t-lbl">Shots</div><div class="t-val" id="'+id+'-ts">0</div>';
-  th+='<div class="t-lbl">Balls</div><div class="t-val" id="'+id+'-tb">0</div>';
-  th+='<div class="t-score-lbl">Score</div><div class="t-score" id="'+id+'-sc">0</div>';
+  th+='<div class="t-lbl">Auto</div><div class="t-val" id="'+id+'-as">0</div>';
+  th+='<div class="t-lbl">Teleop</div><div class="t-val" id="'+id+'-tls">0</div>';
+  th+='<div class="t-score-lbl">Total</div><div class="t-score" id="'+id+'-sc">0</div>';
   th+='</div>';
 }
 document.getElementById('totals-grid').innerHTML=th;
@@ -378,10 +378,11 @@ function ui(id){
     document.getElementById(id+'-'+ph+'-fs').textContent='F:'+d.far.shoots+'/'+d.far.balls;
   }
   var a=data[id].auto,t=data[id].teleop;
-  var totalBalls=a.near.balls+a.far.balls+t.near.balls+t.far.balls;
-  document.getElementById(id+'-ts').textContent=a.near.shoots+a.far.shoots+t.near.shoots+t.far.shoots;
-  document.getElementById(id+'-tb').textContent=totalBalls;
-  document.getElementById(id+'-sc').textContent=totalBalls*3;
+  var autoScore=(a.near.balls+a.far.balls)*3;
+  var telScore=(t.near.balls+t.far.balls)*3;
+  document.getElementById(id+'-as').textContent=autoScore;
+  document.getElementById(id+'-tls').textContent=telScore;
+  document.getElementById(id+'-sc').textContent=autoScore+telScore;
   // Update alliance totals
   updateAllianceTotals();
 }
