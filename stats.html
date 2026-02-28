@@ -335,8 +335,8 @@ function renderRecommendations(stats){
     }
   }
   nearCandidates.sort(function(a,b){
-    if(b.maxScoreNear!==a.maxScoreNear)return b.maxScoreNear-a.maxScoreNear;
     if(b.avgScoreNear!==a.avgScoreNear)return b.avgScoreNear-a.avgScoreNear;
+    if(b.maxScoreNear!==a.maxScoreNear)return b.maxScoreNear-a.maxScoreNear;
     return b.leverRate-a.leverRate;
   });
 
@@ -349,12 +349,12 @@ function renderRecommendations(stats){
     }
   }
   farCandidates.sort(function(a,b){
-    if(b.maxScoreFar!==a.maxScoreFar)return b.maxScoreFar-a.maxScoreFar;
-    return b.avgScoreFar-a.avgScoreFar;
+    if(b.avgScoreFar!==a.avgScoreFar)return b.avgScoreFar-a.avgScoreFar;
+    return b.maxScoreFar-a.maxScoreFar;
   });
 
   var h='<div class="rec-section"><h2>Recommendations</h2>';
-  h+='<div class="note">Ranked by: max balls, avg balls, lever hit (near only).</div>';
+  h+='<div class="note">Ranked by: avg balls, max balls, lever hit (near only).</div>';
   h+='<div class="rec-grid">';
   h+=renderRecCard(nearCandidates,'Best Near Teams','rec-near','near');
   h+=renderRecCard(farCandidates,'Best Far Teams','rec-far','far');
@@ -379,9 +379,9 @@ function renderRecCard(candidates,title,cls,type){
     else if(i===2)badge='<span class="rec-badge badge-bronze">3rd</span>';
     var detail='';
     if(type==='near'){
-      detail='Max:'+c.maxScoreNear+' Avg:'+Math.round(c.avgScoreNear)+' | Auto:'+Math.round(c.autoAvgNear)+' Tel:'+Math.round(c.telAvgNear)+' Lev:'+c.leverRate+'%';
+      detail='Avg:'+Math.round(c.avgScoreNear)+' Max:'+c.maxScoreNear+' | Auto:'+Math.round(c.autoAvgNear)+' Tel:'+Math.round(c.telAvgNear)+' Lev:'+c.leverRate+'%';
     } else {
-      detail='Max:'+c.maxScoreFar+' Avg:'+Math.round(c.avgScoreFar)+' | Auto:'+Math.round(c.autoAvgFar)+' Tel:'+Math.round(c.telAvgFar);
+      detail='Avg:'+Math.round(c.avgScoreFar)+' Max:'+c.maxScoreFar+' | Auto:'+Math.round(c.autoAvgFar)+' Tel:'+Math.round(c.telAvgFar);
     }
     h+='<li>';
     h+='<span class="rec-rank">'+(i+1)+'</span>';
