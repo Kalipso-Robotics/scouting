@@ -177,6 +177,7 @@ function computeStats(name,ms){
   var telNearBalls=[],telNearShoots=0,telNearBallsTotal=0;
   var telFarBalls=[],telFarShoots=0,telFarBallsTotal=0;
   var nearScores=[],farScores=[];
+  var autoTotals=[],telTotals=[];
   var allScores=[];
   var leverHits=0,leverMatches=0;
   var comments=[];
@@ -196,6 +197,12 @@ function computeStats(name,ms){
     // Teleop far
     if(m.teleop_far_balls>0){telFarBalls.push(m.teleop_far_balls);}
     telFarShoots+=m.teleop_far_shoots;telFarBallsTotal+=m.teleop_far_balls;
+
+    // Auto/Teleop totals per match
+    var autoB=m.auto_near_balls+m.auto_far_balls;
+    if(autoB>0)autoTotals.push(autoB);
+    var telB=m.teleop_near_balls+m.teleop_far_balls;
+    if(telB>0)telTotals.push(telB);
 
     // Near total balls (auto_near + teleop_near)
     var nearB=m.auto_near_balls+m.teleop_near_balls;
@@ -226,6 +233,10 @@ function computeStats(name,ms){
     avgScoreNear:avg(nearScores),
     maxScoreFar:Math.max.apply(null,farScores.length?farScores:[0]),
     avgScoreFar:avg(farScores),
+    autoAvgTotal:avg(autoTotals),
+    autoMaxTotal:Math.max.apply(null,autoTotals.length?autoTotals:[0]),
+    telAvgTotal:avg(telTotals),
+    telMaxTotal:Math.max.apply(null,telTotals.length?telTotals:[0]),
     maxScore:Math.max.apply(null,allScores.length?allScores:[0]),
     leverRate:leverMatches?Math.round(leverHits/leverMatches*100):0,
     comments:comments
@@ -259,11 +270,15 @@ function renderTable(stats){
     {k:'avgScoreNear',l:'AVG',fmt:'f0',g:'Total Near'},
     {k:'maxScoreFar',l:'MAX',fmt:'int',g:'Total Far'},
     {k:'avgScoreFar',l:'AVG',fmt:'f0',g:'Total Far'},
+    {k:'autoMaxTotal',l:'MAX',fmt:'int',g:'Auto'},
+    {k:'autoAvgTotal',l:'AVG',fmt:'f0',g:'Auto'},
     {k:'autoMaxNear',l:'MAX',fmt:'int',g:'Auto Near'},
     {k:'autoAvgNear',l:'AVG',fmt:'f0',g:'Auto Near'},
     {k:'leverRate',l:'Lev%',fmt:'pct2',g:'Auto Near'},
     {k:'autoMaxFar',l:'MAX',fmt:'int',g:'Auto Far'},
     {k:'autoAvgFar',l:'AVG',fmt:'f0',g:'Auto Far'},
+    {k:'telMaxTotal',l:'MAX',fmt:'int',g:'Teleop'},
+    {k:'telAvgTotal',l:'AVG',fmt:'f0',g:'Teleop'},
     {k:'telMaxNear',l:'MAX',fmt:'int',g:'Tel Near'},
     {k:'telAvgNear',l:'AVG',fmt:'f0',g:'Tel Near'},
     {k:'telMaxFar',l:'MAX',fmt:'int',g:'Tel Far'},
@@ -505,7 +520,9 @@ function updateAlliancePicks(){
     h+='<span class="rec-rank">'+(i+1)+'</span>';
     var avgClr=pk.totalAvg>=100?'#2ecc71':pk.totalAvg>=70?'#e67e22':'#e74c3c';
     var maxClr=pk.totalMax>=100?'#2ecc71':pk.totalMax>=67?'#e67e22':'#e74c3c';
-    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+avgClr+'">Avg:'+Math.round(pk.totalAvg)+'</span> <span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span></span>';
+    var autoAvg=Math.round(pk.meAutoAvg+pk.pAutoAvg);
+    var telAvg=Math.round(pk.meTelAvg+pk.pTelAvg);
+    h+='<span style="font-weight:700;font-size:0.7rem;margin-right:6px"><span style="color:'+avgClr+'">Avg:'+Math.round(pk.totalAvg)+'</span> <span style="color:'+maxClr+'">Max:'+Math.round(pk.totalMax)+'</span> <span style="font-size:0.55rem;color:rgba(255,255,255,0.5);font-weight:400">A:'+autoAvg+' T:'+telAvg+'</span></span>';
     h+='<span class="rec-name"><a href="team.html?team='+encodeURIComponent(pk.team)+'" style="color:inherit;text-decoration:none">'+pk.team+'</a>'+badge+'</span>';
     h+='<div style="width:100%;font-size:0.55rem;color:rgba(255,255,255,0.5);padding:2px 0 0 28px">';
     h+='You('+youAvg+'): <span class="alliance-pick-pos pos-'+(pk.meAuto==='Near'?'near':'far')+'">A:'+pk.meAuto+'('+Math.round(pk.meAutoAvg)+')</span> ';
