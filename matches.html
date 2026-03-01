@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Match Schedule - Kalipso Stats</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#1a1a2e;color:#fff;min-height:100vh;padding:12px;
+  }
+  h1{text-align:center;font-size:1.2rem;padding:8px 0;letter-spacing:1px;color:#eee}
+  .nav{text-align:center;margin-bottom:10px}
+  .nav a{color:#00cec9;font-size:0.85rem;text-decoration:none}
+  .team-select{
+    display:block;margin:8px auto;padding:8px 12px;border:none;border-radius:6px;
+    background:rgba(255,255,255,0.13);color:#fff;font-size:0.8rem;
+    outline:none;-webkit-appearance:none;appearance:none;min-width:220px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='white' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;padding-right:20px;
+  }
+  .team-select option{color:#000;background:#fff}
+  .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
+  table{border-collapse:collapse;width:100%;font-size:0.7rem}
+  th,td{padding:6px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
+  th{
+    background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
+    letter-spacing:0.3px;white-space:nowrap;position:sticky;top:0;font-size:0.6rem;
+  }
+  td{font-variant-numeric:tabular-nums}
+  tr:hover{background:rgba(255,255,255,0.05)}
+  .red-cell{color:#e74c3c}
+  .blue-cell{color:#3498db}
+  .match-num{font-weight:700;font-size:0.8rem}
+  .highlight{background:rgba(241,196,15,0.15);font-weight:700}
+</style>
+</head>
+<body>
+
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v1.7</div>
+<h1>MATCH SCHEDULE</h1>
+<div class="nav"><a href="stats.html">&larr; Stats Dashboard</a> &nbsp;|&nbsp; <a href="index.html">Scouting &rarr;</a></div>
+
+<select class="team-select" id="team-filter" onchange="filterMatches()">
+  <option value="">-- All Teams --</option>
+</select>
+<div class="note" id="match-count"></div>
+
+<div class="tbl-wrap">
+<table>
+<thead><tr>
+  <th>#</th>
+  <th>Red 1</th>
+  <th>Red 2</th>
+  <th>Blue 1</th>
+  <th>Blue 2</th>
+</tr></thead>
+<tbody id="match-body"></tbody>
+</table>
+</div>
+
+<script>
+var MATCHES=[
+  {n:1,r1:'JFK Robotics - 23393',r2:'404 Not Found - 31616',b1:'TerraBats - 14525',b2:'Dry Ice - 9784'},
+  {n:2,r1:'E.G.G. - 17094',r2:'Kalipso Robotics - 23346',b1:'CometBOTs - 14493',b2:'Error 404 - Team Not Found - 16278'},
+  {n:3,r1:'Robowarriors - 25627',r2:'Polaris Robotics - 18340',b1:'AstroBruins - 19819',b2:'The Argobots - 26586'},
+  {n:4,r1:'Team Alpha - 21316',r2:'Alphabots - 16026',b1:'MidKnight Madness - 7854',b2:'SuperPowered Jalapenos - 23292'},
+  {n:5,r1:'Hyperion - 9614',r2:'Metal Maniacs - 20163',b1:'Infernobots - 16533',b2:'Cheesy Bytes - 23224'},
+  {n:6,r1:'Little Potato - 30592',r2:'RRR Riftbots - 25961',b1:'MSET CuttleFish - 6165',b2:'Evergreen Tech-a-Trons - 25690'},
+  {n:7,r1:'Heron Robotics - 27621',r2:'Aztec Robotics - 31174',b1:'Hepha - 26401',b2:'QuantaMania - 27090'},
+  {n:8,r1:'GalaxyBots - 21454',r2:'Mastermindz - 18466',b1:'Vulcan Robotics - 8375',b2:'Ink and Metal - 5773'},
+  {n:9,r1:'E.G.G. - 17094',r2:'Infernobots - 16533',b1:'Robowarriors - 25627',b2:'TerraBats - 14525'},
+  {n:10,r1:'Polaris Robotics - 18340',r2:'Dry Ice - 9784',b1:'Kalipso Robotics - 23346',b2:'Hyperion - 9614'},
+  {n:11,r1:'SuperPowered Jalapenos - 23292',r2:'JFK Robotics - 23393',b1:'Aztec Robotics - 31174',b2:'Error 404 - Team Not Found - 16278'},
+  {n:12,r1:'Metal Maniacs - 20163',r2:'Heron Robotics - 27621',b1:'MidKnight Madness - 7854',b2:'CometBOTs - 14493'},
+  {n:13,r1:'Mastermindz - 18466',r2:'Cheesy Bytes - 23224',b1:'RRR Riftbots - 25961',b2:'AstroBruins - 19819'},
+  {n:14,r1:'MSET CuttleFish - 6165',r2:'QuantaMania - 27090',b1:'GalaxyBots - 21454',b2:'Team Alpha - 21316'},
+  {n:15,r1:'The Argobots - 26586',r2:'Evergreen Tech-a-Trons - 25690',b1:'Vulcan Robotics - 8375',b2:'404 Not Found - 31616'},
+  {n:16,r1:'Little Potato - 30592',r2:'Alphabots - 16026',b1:'Ink and Metal - 5773',b2:'Hepha - 26401'},
+  {n:17,r1:'Infernobots - 16533',r2:'SuperPowered Jalapenos - 23292',b1:'Dry Ice - 9784',b2:'Mastermindz - 18466'},
+  {n:18,r1:'TerraBats - 14525',r2:'AstroBruins - 19819',b1:'Heron Robotics - 27621',b2:'Kalipso Robotics - 23346'},
+  {n:19,r1:'Aztec Robotics - 31174',r2:'Vulcan Robotics - 8375',b1:'Team Alpha - 21316',b2:'Robowarriors - 25627'},
+  {n:20,r1:'Polaris Robotics - 18340',r2:'GalaxyBots - 21454',b1:'Cheesy Bytes - 23224',b2:'Little Potato - 30592'},
+  {n:21,r1:'Hepha - 26401',r2:'Error 404 - Team Not Found - 16278',b1:'The Argobots - 26586',b2:'RRR Riftbots - 25961'},
+  {n:22,r1:'MidKnight Madness - 7854',r2:'Ink and Metal - 5773',b1:'Evergreen Tech-a-Trons - 25690',b2:'E.G.G. - 17094'},
+  {n:23,r1:'Metal Maniacs - 20163',r2:'JFK Robotics - 23393',b1:'Alphabots - 16026',b2:'MSET CuttleFish - 6165'},
+  {n:24,r1:'404 Not Found - 31616',r2:'CometBOTs - 14493',b1:'QuantaMania - 27090',b2:'Hyperion - 9614'},
+  {n:25,r1:'Hepha - 26401',r2:'Cheesy Bytes - 23224',b1:'SuperPowered Jalapenos - 23292',b2:'Kalipso Robotics - 23346'},
+  {n:26,r1:'Vulcan Robotics - 8375',r2:'TerraBats - 14525',b1:'Polaris Robotics - 18340',b2:'MidKnight Madness - 7854'},
+  {n:27,r1:'Ink and Metal - 5773',r2:'Robowarriors - 25627',b1:'Dry Ice - 9784',b2:'Metal Maniacs - 20163'},
+  {n:28,r1:'Error 404 - Team Not Found - 16278',r2:'MSET CuttleFish - 6165',b1:'404 Not Found - 31616',b2:'Heron Robotics - 27621'},
+  {n:29,r1:'CometBOTs - 14493',r2:'RRR Riftbots - 25961',b1:'Alphabots - 16026',b2:'GalaxyBots - 21454'},
+  {n:30,r1:'The Argobots - 26586',r2:'Team Alpha - 21316',b1:'JFK Robotics - 23393',b2:'Infernobots - 16533'},
+  {n:31,r1:'Evergreen Tech-a-Trons - 25690',r2:'Hyperion - 9614',b1:'AstroBruins - 19819',b2:'Aztec Robotics - 31174'},
+  {n:32,r1:'Mastermindz - 18466',r2:'QuantaMania - 27090',b1:'Little Potato - 30592',b2:'E.G.G. - 17094'},
+  {n:33,r1:'Cheesy Bytes - 23224',r2:'MSET CuttleFish - 6165',b1:'Ink and Metal - 5773',b2:'TerraBats - 14525'},
+  {n:34,r1:'Team Alpha - 21316',r2:'Dry Ice - 9784',b1:'CometBOTs - 14493',b2:'Hepha - 26401'},
+  {n:35,r1:'Kalipso Robotics - 23346',r2:'MidKnight Madness - 7854',b1:'Robowarriors - 25627',b2:'GalaxyBots - 21454'},
+  {n:36,r1:'AstroBruins - 19819',r2:'Vulcan Robotics - 8375',b1:'E.G.G. - 17094',b2:'JFK Robotics - 23393'},
+  {n:37,r1:'404 Not Found - 31616',r2:'Aztec Robotics - 31174',b1:'Alphabots - 16026',b2:'Mastermindz - 18466'},
+  {n:38,r1:'Error 404 - Team Not Found - 16278',r2:'Evergreen Tech-a-Trons - 25690',b1:'QuantaMania - 27090',b2:'Metal Maniacs - 20163'},
+  {n:39,r1:'Infernobots - 16533',r2:'Heron Robotics - 27621',b1:'RRR Riftbots - 25961',b2:'Polaris Robotics - 18340'},
+  {n:40,r1:'Hyperion - 9614',r2:'The Argobots - 26586',b1:'SuperPowered Jalapenos - 23292',b2:'Little Potato - 30592'}
+];
+
+// Build team dropdown
+var teamSet={};
+for(var i=0;i<MATCHES.length;i++){
+  var m=MATCHES[i];
+  teamSet[m.r1]=1;teamSet[m.r2]=1;teamSet[m.b1]=1;teamSet[m.b2]=1;
+}
+var teams=Object.keys(teamSet).sort();
+var dd=document.getElementById('team-filter');
+for(var i=0;i<teams.length;i++){
+  dd.innerHTML+='<option value="'+teams[i]+'">'+teams[i]+'</option>';
+}
+
+function filterMatches(){
+  var sel=document.getElementById('team-filter').value;
+  var tbody=document.getElementById('match-body');
+  var h='';
+  var count=0;
+  for(var i=0;i<MATCHES.length;i++){
+    var m=MATCHES[i];
+    var show=!sel||(m.r1===sel||m.r2===sel||m.b1===sel||m.b2===sel);
+    if(!show)continue;
+    count++;
+    h+='<tr>';
+    h+='<td class="match-num">'+m.n+'</td>';
+    h+='<td class="red-cell'+(m.r1===sel?' highlight':'')+'">'+m.r1+'</td>';
+    h+='<td class="red-cell'+(m.r2===sel?' highlight':'')+'">'+m.r2+'</td>';
+    h+='<td class="blue-cell'+(m.b1===sel?' highlight':'')+'">'+m.b1+'</td>';
+    h+='<td class="blue-cell'+(m.b2===sel?' highlight':'')+'">'+m.b2+'</td>';
+    h+='</tr>';
+  }
+  tbody.innerHTML=h;
+  document.getElementById('match-count').textContent=sel?(count+' matches for '+sel):(MATCHES.length+' total matches');
+}
+
+filterMatches();
+</script>
+</body>
+</html>
