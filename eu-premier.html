@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>EU Premier Scouting Report</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#1a1a2e;color:#fff;min-height:100vh;padding:12px;
+  }
+  h1{text-align:center;font-size:1.2rem;padding:8px 0;letter-spacing:1px;color:#eee}
+  .subtitle{text-align:center;font-size:0.7rem;color:rgba(255,255,255,0.4);margin-bottom:12px}
+  .nav{text-align:center;margin-bottom:10px}
+  .nav a{color:#00cec9;font-size:0.85rem;text-decoration:none}
+
+  .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5);font-size:0.9rem}
+  .progress{width:80%;max-width:300px;margin:12px auto;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
+  .progress-bar{height:100%;background:#00cec9;width:0%;transition:width 0.3s}
+  .status{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:6px}
+
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
+  table{border-collapse:collapse;width:100%;min-width:700px;font-size:0.7rem}
+  th,td{padding:6px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
+  th{
+    background:rgba(0,0,0,0.4);font-weight:700;text-transform:uppercase;
+    letter-spacing:0.3px;cursor:pointer;white-space:nowrap;position:sticky;top:0;
+    user-select:none;font-size:0.6rem;z-index:1;
+  }
+  th:hover{background:rgba(0,0,0,0.6)}
+  th.sort-asc::after{content:' \u25B2';font-size:0.5rem}
+  th.sort-desc::after{content:' \u25BC';font-size:0.5rem}
+  td{font-variant-numeric:tabular-nums}
+  tr:hover{background:rgba(255,255,255,0.05)}
+  td.team-cell{text-align:left;font-weight:600;white-space:nowrap;font-size:0.7rem}
+  td.team-cell a{color:#fff;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.3)}
+  td.team-cell a:hover{color:#00cec9;border-bottom-color:#00cec9}
+  td.rank-cell{font-weight:700;color:rgba(255,255,255,0.5);font-size:0.65rem}
+  .country{font-size:0.5rem;opacity:0.4;font-weight:400;margin-left:2px}
+
+  .heat-top{color:#2ecc71;font-weight:700}
+  .heat-high{color:#27ae60}
+  .heat-mid{color:#f1c40f}
+  .heat-low{color:#e67e22}
+  .heat-bottom{color:#e74c3c}
+  .heat-none{color:rgba(255,255,255,0.2)}
+
+  .tier-label{
+    display:inline-block;padding:1px 6px;border-radius:3px;font-size:0.55rem;
+    font-weight:700;vertical-align:middle;
+  }
+  .tier-s{background:rgba(46,204,113,0.25);color:#2ecc71}
+  .tier-a{background:rgba(39,174,96,0.25);color:#27ae60}
+  .tier-b{background:rgba(241,196,15,0.25);color:#f1c40f}
+  .tier-c{background:rgba(230,126,34,0.25);color:#e67e22}
+  .tier-d{background:rgba(231,76,60,0.25);color:#e74c3c}
+
+  .match-link{color:inherit;text-decoration:underline;text-decoration-style:dotted}
+  .match-label{font-size:0.5rem;opacity:0.5}
+
+  .note{text-align:center;font-size:0.6rem;color:rgba(255,255,255,0.3);margin:8px 0}
+  .source{text-align:center;font-size:0.55rem;color:rgba(255,255,255,0.2);margin-top:16px}
+
+  .refresh-btn{
+    display:block;margin:12px auto;padding:10px 24px;border:none;border-radius:8px;
+    background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;
+    font-size:0.9rem;font-weight:600;cursor:pointer;
+  }
+  .refresh-btn:active{transform:scale(0.97)}
+</style>
+</head>
+<body>
+
+<div style="text-align:right;font-size:0.45rem;opacity:0.3">v2.0</div>
+<h1>EU PREMIER SCOUTING REPORT</h1>
+<div class="subtitle">FPEEUR &middot; Eindhoven, Netherlands &middot; June 17-20, 2026</div>
+<div class="nav"><a href="index.html">&larr; Back to Scouting</a></div>
+
+<div id="content">
+  <div class="loading" id="loading">
+    <div>Loading team data from FTC Scout API...</div>
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="status" id="status-text">Fetching team list...</div>
+  </div>
+</div>
+
+<button class="refresh-btn" onclick="loadAll()" style="display:none" id="refresh-btn">Refresh Data</button>
+
+<div class="note" id="note" style="display:none">Sorted by OPR. Max Score = team's own alliance score (no penalty). Click score to view match. Tap headers to sort.</div>
+<div class="source" id="source-note" style="display:none">Source: FTC Scout API (api.ftcscout.org) &middot; Live data</div>
+
+<script>
+var API='https://api.ftcscout.org/rest/v1';
+var EVENT_CODE='FPEEUR';
+var SEASON=2025;
+var teams=[];
+var totalSteps=0,doneSteps=0;
+
+function setProgress(pct,msg){
+  document.getElementById('progress-bar').style.width=pct+'%';
+  if(msg)document.getElementById('status-text').textContent=msg;
+}
+
+function stepDone(){
+  doneSteps++;
+  setProgress(Math.round(doneSteps/totalSteps*100));
+}
+
+async function fetchJson(url){
+  var r=await fetch(url);
+  if(!r.ok)throw new Error('API error: '+r.status);
+  return r.json();
+}
+
+async function loadAll(){
+  teams=[];
+  doneSteps=0;
+  document.getElementById('content').innerHTML=
+    '<div class="loading" id="loading"><div>Loading team data from FTC Scout API...</div>'+
+    '<div class="progress"><div class="progress-bar" id="progress-bar"></div></div>'+
+    '<div class="status" id="status-text">Fetching team list...</div></div>';
+  document.getElementById('refresh-btn').style.display='none';
+
+  try{
+    // Step 1: Get team list
+    setProgress(5,'Fetching team list...');
+    var eventTeams=await fetchJson(API+'/events/'+SEASON+'/'+EVENT_CODE+'/teams');
+    var teamNumbers=eventTeams.map(function(t){return t.teamNumber});
+    totalSteps=teamNumbers.length*3; // info + quickstats + events per team
+
+    setProgress(10,'Fetching data for '+teamNumbers.length+' teams...');
+
+    // Step 2: Fetch team info, quick-stats, and events in parallel
+    var promises=teamNumbers.map(async function(num){
+      var info,qs,events;
+      try{info=await fetchJson(API+'/teams/'+num);}catch(e){info=null;}
+      stepDone();
+      try{qs=await fetchJson(API+'/teams/'+num+'/quick-stats?season='+SEASON);}catch(e){qs=null;}
+      stepDone();
+      try{events=await fetchJson(API+'/teams/'+num+'/events/'+SEASON);}catch(e){events=[];}
+      stepDone();
+      return {number:num,info:info,quickStats:qs,events:events};
+    });
+
+    var results=await Promise.all(promises);
+    setProgress(80,'Finding best matches...');
+
+    // Step 3: Find best event + match for each team
+    var eventCodes={};
+    for(var i=0;i<results.length;i++){
+      var r=results[i];
+      var bestEvent=null,bestMaxNp=0;
+      if(r.events){
+        for(var j=0;j<r.events.length;j++){
+          var ev=r.events[j];
+          if(ev.stats&&ev.stats.max&&ev.stats.max.totalPointsNp>bestMaxNp){
+            bestMaxNp=ev.stats.max.totalPointsNp;
+            bestEvent=ev;
+          }
+        }
+      }
+      r.bestEvent=bestEvent;
+      r.maxScoreNp=bestMaxNp;
+      if(bestEvent)eventCodes[bestEvent.eventCode]=true;
+    }
+
+    // Step 4: Fetch match data for best events to find exact match
+    var uniqueEvents=Object.keys(eventCodes);
+    setProgress(85,'Fetching match details for '+uniqueEvents.length+' events...');
+    var matchDataMap={};
+    var matchPromises=uniqueEvents.map(async function(code){
+      try{
+        var matches=await fetchJson(API+'/events/'+SEASON+'/'+code+'/matches');
+        matchDataMap[code]=matches;
+      }catch(e){matchDataMap[code]=[];}
+    });
+    await Promise.all(matchPromises);
+
+    setProgress(95,'Processing...');
+
+    // Step 5: For each team, find the exact match
+    for(var i=0;i<results.length;i++){
+      var r=results[i];
+      r.bestMatch=null;
+      r.bestMatchAutoArt=0;
+      r.bestMatchDcArt=0;
+      r.bestMatchAutoTotal=0;
+      r.bestMatchDcTotal=0;
+      if(!r.bestEvent)continue;
+      var matches=matchDataMap[r.bestEvent.eventCode]||[];
+      var bestNp=0;
+      for(var m=0;m<matches.length;m++){
+        var match=matches[m];
+        if(!match.hasBeenPlayed||!match.scores||!match.teams)continue;
+        // Find which alliance the team is on
+        var alliance=null;
+        for(var t=0;t<match.teams.length;t++){
+          if(match.teams[t].teamNumber===r.number){
+            alliance=match.teams[t].alliance;
+            break;
+          }
+        }
+        if(!alliance)continue;
+        var sc=match.scores[alliance.toLowerCase()];
+        if(!sc)continue;
+        if(sc.totalPointsNp>bestNp){
+          bestNp=sc.totalPointsNp;
+          r.bestMatch=match;
+          r.bestMatchAlliance=alliance;
+          r.bestMatchAutoArt=sc.autoArtifactPoints||0;
+          r.bestMatchDcArt=sc.dcArtifactPoints||0;
+          r.bestMatchAutoTotal=sc.autoPoints||0;
+          r.bestMatchDcTotal=sc.dcPoints||0;
+          r.maxScoreNp=bestNp;
+        }
+      }
+    }
+
+    // Step 6: Build team objects
+    for(var i=0;i<results.length;i++){
+      var r=results[i];
+      var name=(r.info&&r.info.name)||('Team '+r.number);
+      var loc=(r.info&&(r.info.state||r.info.country))||'';
+      var country=(r.info&&r.info.country)||'';
+      // Use state for US teams, country for others
+      if(r.info&&r.info.country==='United States'&&r.info.state)country=r.info.state+', USA';
+      else if(r.info&&r.info.country)country=r.info.country;
+      var opr=r.quickStats?r.quickStats.tot.value:0;
+      var autoOpr=r.quickStats?r.quickStats.auto.value:0;
+      var teleopOpr=r.quickStats?r.quickStats.dc.value:0;
+      var endgameOpr=r.quickStats?r.quickStats.eg.value:0;
+      var matchUrl='';
+      var matchLabel='';
+      if(r.bestMatch){
+        var ec=r.bestEvent.eventCode;
+        matchUrl='https://ftcscout.org/events/'+SEASON+'/'+ec+'/matches';
+        var tl=r.bestMatch.tournamentLevel;
+        var mid=r.bestMatch.id;
+        if(tl==='Quals')matchLabel='Q-'+mid;
+        else if(tl==='Semis'||tl==='Playoff')matchLabel='M-'+mid;
+        else if(tl==='Finals')matchLabel='F-'+mid;
+        else matchLabel=mid;
+      }
+      teams.push({
+        number:r.number,name:name,country:country,
+        opr:opr,autoOpr:autoOpr,teleopOpr:teleopOpr,endgameOpr:endgameOpr,
+        maxScore:r.maxScoreNp,
+        autoArt:r.bestMatchAutoArt,dcArt:r.bestMatchDcArt,
+        autoTotal:r.bestMatchAutoTotal,dcTotal:r.bestMatchDcTotal,
+        matchUrl:matchUrl,matchLabel:matchLabel
+      });
+    }
+
+    teams.sort(function(a,b){return b.opr-a.opr});
+    setProgress(100,'Done!');
+    renderTable();
+    document.getElementById('refresh-btn').style.display='block';
+    document.getElementById('note').style.display='block';
+    document.getElementById('source-note').style.display='block';
+
+  }catch(e){
+    document.getElementById('content').innerHTML=
+      '<div class="loading">Error: '+e.message+'<br>Please try again.</div>';
+    document.getElementById('refresh-btn').style.display='block';
+  }
+}
+
+// Tier helpers
+function getTier(opr){
+  if(opr>=100)return{label:'S',cls:'tier-s'};
+  if(opr>=75)return{label:'A',cls:'tier-a'};
+  if(opr>=50)return{label:'B',cls:'tier-b'};
+  if(opr>=25)return{label:'C',cls:'tier-c'};
+  return{label:'D',cls:'tier-d'};
+}
+function getTierNum(opr){
+  if(opr>=100)return 5;if(opr>=75)return 4;if(opr>=50)return 3;if(opr>=25)return 2;return 1;
+}
+function heatClass(val,max){
+  if(val===0)return'heat-none';
+  var pct=val/max;
+  if(pct>=0.8)return'heat-top';if(pct>=0.6)return'heat-high';
+  if(pct>=0.4)return'heat-mid';if(pct>=0.2)return'heat-low';
+  return'heat-bottom';
+}
+
+var currentSort={col:'opr',dir:'desc'};
+
+function renderTable(){
+  var maxOpr=0,maxAuto=0,maxTel=0,maxEnd=0,maxScore=0,maxAutoArt=0,maxDcArt=0;
+  for(var i=0;i<teams.length;i++){
+    var t=teams[i];
+    if(t.opr>maxOpr)maxOpr=t.opr;
+    if(t.autoOpr>maxAuto)maxAuto=t.autoOpr;
+    if(t.teleopOpr>maxTel)maxTel=t.teleopOpr;
+    if(t.endgameOpr>maxEnd)maxEnd=t.endgameOpr;
+    if(t.maxScore>maxScore)maxScore=t.maxScore;
+    if(t.autoArt>maxAutoArt)maxAutoArt=t.autoArt;
+    if(t.dcArt>maxDcArt)maxDcArt=t.dcArt;
+  }
+  // Assign OPR ranks
+  var ranked=teams.slice().sort(function(a,b){return b.opr-a.opr});
+  for(var i=0;i<ranked.length;i++)ranked[i].rank=i+1;
+
+  var h='<div class="tbl-wrap"><table id="report-table"><thead><tr>';
+  h+='<th onclick="sortBy(\'rank\')">#</th>';
+  h+='<th onclick="sortBy(\'number\')">Team #</th>';
+  h+='<th onclick="sortBy(\'name\')" style="text-align:left">Team Name</th>';
+  h+='<th onclick="sortBy(\'tier\')">Tier</th>';
+  h+='<th onclick="sortBy(\'opr\')">OPR</th>';
+  h+='<th onclick="sortBy(\'autoOpr\')">Auto OPR</th>';
+  h+='<th onclick="sortBy(\'teleopOpr\')">Tel OPR</th>';
+  h+='<th onclick="sortBy(\'endgameOpr\')">End OPR</th>';
+  h+='<th onclick="sortBy(\'maxScore\')">Max Score</th>';
+  h+='<th onclick="sortBy(\'autoArt\')">Auto Balls</th>';
+  h+='<th onclick="sortBy(\'dcArt\')">Tel Balls</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var i=0;i<teams.length;i++){
+    var t=teams[i];
+    var tier=getTier(t.opr);
+    var noData=(t.opr===0&&t.maxScore===0);
+    h+='<tr>';
+    h+='<td class="rank-cell">'+t.rank+'</td>';
+    h+='<td>'+t.number+'</td>';
+    h+='<td class="team-cell"><a href="https://ftcscout.org/teams/'+t.number+'" target="_blank">'+t.name+'</a><span class="country"> '+t.country+'</span></td>';
+    h+='<td><span class="tier-label '+tier.cls+'">'+tier.label+'</span></td>';
+    h+='<td class="'+(noData?'heat-none':heatClass(t.opr,maxOpr))+'">'+(noData?'N/A':t.opr.toFixed(1))+'</td>';
+    h+='<td class="'+(noData?'heat-none':heatClass(t.autoOpr,maxAuto))+'">'+(noData?'N/A':t.autoOpr.toFixed(1))+'</td>';
+    h+='<td class="'+(noData?'heat-none':heatClass(t.teleopOpr,maxTel))+'">'+(noData?'N/A':t.teleopOpr.toFixed(1))+'</td>';
+    h+='<td class="'+(noData?'heat-none':heatClass(t.endgameOpr,maxEnd))+'">'+(noData?'N/A':t.endgameOpr.toFixed(1))+'</td>';
+    // Max Score with link
+    if(noData){
+      h+='<td class="heat-none">N/A</td>';
+    }else if(t.matchUrl){
+      h+='<td class="'+heatClass(t.maxScore,maxScore)+'"><a href="'+t.matchUrl+'" target="_blank" class="match-link">'+t.maxScore+'</a> <span class="match-label">'+t.matchLabel+'</span></td>';
+    }else{
+      h+='<td class="'+heatClass(t.maxScore,maxScore)+'">'+t.maxScore+'</td>';
+    }
+    // Auto & Teleop artifact points from the max score match
+    h+='<td class="'+(noData?'heat-none':heatClass(t.autoArt,maxAutoArt))+'">'+(!noData?t.autoArt:'N/A')+'</td>';
+    h+='<td class="'+(noData?'heat-none':heatClass(t.dcArt,maxDcArt))+'">'+(!noData?t.dcArt:'N/A')+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  document.getElementById('content').innerHTML=h;
+
+  // Update sort indicators
+  var ths=document.querySelectorAll('#report-table th');
+  var colKeys=['rank','number','name','tier','opr','autoOpr','teleopOpr','endgameOpr','maxScore','autoArt','dcArt'];
+  for(var j=0;j<ths.length;j++){
+    ths[j].className='';
+    if(colKeys[j]===currentSort.col)ths[j].className=currentSort.dir==='asc'?'sort-asc':'sort-desc';
+  }
+}
+
+function sortBy(col){
+  if(currentSort.col===col){
+    currentSort.dir=currentSort.dir==='desc'?'asc':'desc';
+  }else{
+    currentSort.col=col;
+    currentSort.dir=(col==='name'||col==='number')?'asc':'desc';
+  }
+  teams.sort(function(a,b){
+    var va,vb;
+    if(col==='tier'){va=getTierNum(a.opr);vb=getTierNum(b.opr);}
+    else{va=a[col];vb=b[col];}
+    if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase();}
+    if(va<vb)return currentSort.dir==='asc'?-1:1;
+    if(va>vb)return currentSort.dir==='asc'?1:-1;
+    return 0;
+  });
+  renderTable();
+}
+
+// Load on start
+loadAll();
+</script>
+</body>
+</html>
